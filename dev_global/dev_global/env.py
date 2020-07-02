@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import os
-# from polaris.mysql8 import mysqlHeader
+from polaris.mysql8 import mysqlHeader
 
 """
 global environment varibles
@@ -34,5 +34,5 @@ SQL_FILE = SOFT_PATH + 'config/sql.json'
 MANUAL = SOFT_PATH + 'config/Neutrino'
 
 
-# GLOBAL_HEADER = mysqlHeader('stock', 'stock2020', 'stock')
-# VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')
+GLOBAL_HEADER = mysqlHeader('stock', 'stock2020', 'stock')
+VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')
