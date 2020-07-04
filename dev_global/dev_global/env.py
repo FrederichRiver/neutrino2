@@ -16,8 +16,8 @@ if os.getenv('SERVER') == 'MARS':
     ROOT_PATH = '/root/'
     SOFT_PATH = '/opt/neutrino/'
 else:
-    ROOT_PATH = '~/Dev/neutrino2/'
-    SOFT_PATH = '~/Dev/neutrino2/'
+    ROOT_PATH = '/home/friederich/Dev/neutrino2/'
+    SOFT_PATH = '/home/friederich/Dev/neutrino2/'
 
 
 PROJ_PATH = '/home/friederich/Dev/neutrino2'

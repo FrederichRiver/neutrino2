@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 from jupiter.database_manager import event_mysql_backup
 __version__ = '1.0.3'
 

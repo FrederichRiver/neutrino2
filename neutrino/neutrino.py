@@ -9,13 +9,10 @@ import os
 import signal
 import sys
 import time
-from apscheduler.executors.pool import ThreadPoolExecutor
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from dev_global.env import LOG_FILE, PID_FILE, TASK_FILE, MANUAL, GLOBAL_HEADER
 from polaris.mysql8 import mysqlHeader, mysqlBase
 from jupiter.task_manager import taskManager, taskManager2
 from jupiter.utils import ERROR, INFO
-from sqlalchemy.ext.declarative import declarative_base
 from threading import Thread
 
 __version__ = '1.6.14'
