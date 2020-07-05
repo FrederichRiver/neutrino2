@@ -4,7 +4,7 @@ from dev_global.env import PROJ_PATH
 
 # PROJ_PATH = '/home/friederich/Dev/neutrino2'
 
-lib_list = ['dev_global', 'jupiter', 'polaris', 'venus', 'saturn', 'taurus']
+lib_list = ['dev_global', 'mars', 'polaris', 'venus', 'saturn', 'taurus']
 for lib in lib_list:
     # go into library directory
     os.chdir(f"{PROJ_PATH}/{lib}")

@@ -8,16 +8,16 @@ import re
 import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from jupiter.utils import ERROR
-from jupiter.log_manager import log_decorator
+from mars.utils import ERROR
+from mars.log_manager import log_decorator
 # modules loaded into module list
 import venus.api_stock_event
 import taurus.nlp_event
 import saturn.finance_event
 import saturn.balance_analysis
-import jupiter.database_manager
-import jupiter.log_manager
-import jupiter.mail_manager
+import mars.database_manager
+import mars.log_manager
+import mars.mail_manager
 
 __version__ = '1.2.7'
 
@@ -48,9 +48,9 @@ class taskManager(BackgroundScheduler):
         else:
             self.module_list = [
                 venus.api_stock_event, taurus.nlp_event,
-                jupiter.database_manager, saturn.finance_event,
+                mars.database_manager, saturn.finance_event,
                 saturn.balance_analysis,
-                jupiter.mail_manager, jupiter.log_manager]
+                mars.mail_manager, mars.log_manager]
             self.taskfile = taskfile
             self.func_list = {}
             self.reload_event()
@@ -183,44 +183,20 @@ class taskManager2(BackgroundScheduler):
     """
     def __init__(self, taskfile=None, task_manager_name=None, gconfig={}, **options):
         super(BackgroundScheduler, self).__init__(gconfig=gconfig, **options)
-        # if task file is not found.
         self.task_manager_name = task_manager_name
         self.start_time = datetime.datetime.now()
-        if not taskfile:
-            ERROR("Task file is not found.")
-        else:
-            self.module_list = [
-                venus.api_stock_event,
-                taurus.nlp_event,
-                jupiter.database_manager,
-                saturn.finance_event,
-                saturn.balance_analysis,
-                jupiter.mail_manager,
-                jupiter.log_manager,
-                ]
+        if taskfile:
             self.taskfile = taskfile
-            self.func_list = {}
             self.task_solver = taskSolver(taskfile)
+            self._task_list = []
+        else:
+            # if task file is not found.
+            raise FileNotFoundError(taskfile)
 
     def __str__(self):
         runtime = datetime.datetime.now() - self.start_time
         h, m = timedelta_convert(runtime)
         return f"<Task manager ({self.task_manager_name}) has running for {h}:{str(m).zfill(2)}:00>"
-
-    def task_resolve(self, jsdata):
-        """
-        Resolve the task file into job and trigger.
-        File format is json.
-        Return: {job: trigger}
-        """
-        tasklist = []
-        for task_data in jsdata:
-            # job_resolve
-            task = self.task_solver(task_data)
-            tasklist.append(task)
-        # format:
-        # { job_function<function> : job_trigger<trigger> }
-        return tasklist
 
     def check_task_file(self):
         # if task file not exist, send a warning.
@@ -228,6 +204,40 @@ class taskManager2(BackgroundScheduler):
             self.append_task()
         else:
             ERROR("Task plan file is not found.")
+
+    def _update_task_list(self):
+        self._task_list = self.get_jobs()
+
+    def check_task_list(self):
+        temp_task_list = self.load_task_list()
+        for task in temp_task_list:
+            for old_task in self._task_list:
+                if task.name == old_task.name:
+                    if task.trigger != old_task.trigger:
+                        task.flag = 'changed'
+                    elif task.func != old_task.func:
+                        task.flag = 'changed'
+                    else:
+                        task.flag = 'no change'
+                else:
+                    task.flag = 'add'
+        return temp_task_list
+
+    def task_manage(self, task_list):
+        for task in task_list:
+            if task.flag == 'add':
+                self.add_job(task.func, trigger=task.trigger, id=task.name)
+            elif task.flag == 'changed':
+                self.reschedule_job(task.name, trigger=task.trigger)
+
+    def load_task_list(self):
+        with open(self.taskfile, 'r') as f:
+            jsdata = json.load(f)
+        task_list = []
+        for task_data in jsdata:
+            task = self.task_solver.task_resolve(task_data)
+            task_list.append(task)
+        return task_list
 
     def append_task(self):
         # if exist, resolve the task file.
@@ -260,6 +270,7 @@ class taskBase(object):
         self.name = task_name
         self.func = func
         self.trigger = trigger
+        self.flag = None
 
     def __str__(self):
         return f"<{self.name}:{self.func}:{self.trigger}>"
@@ -271,11 +282,11 @@ class taskSolver(object):
             self.module_list = [
                 venus.api_stock_event,
                 taurus.nlp_event,
-                jupiter.database_manager,
+                mars.database_manager,
                 saturn.finance_event,
                 saturn.balance_analysis,
-                jupiter.mail_manager,
-                jupiter.log_manager,
+                mars.mail_manager,
+                mars.log_manager,
                 ]
             self.taskfile = taskfile
             self.func_list = {}
@@ -320,28 +331,28 @@ class taskSolver(object):
             elif k == 'hour':
                 trigger = CronTrigger(hour=jsdata['hour'])
             elif k == 'time':
-                m = re.match(r'(\d{1,2}):(\d{2})', jsdata['time'])
-                trigger = CronTrigger(
-                    hour=int(m.group(1)),
-                    minute=int(m.group(2)))
+                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['time']):
+                    trigger = CronTrigger(
+                        hour=int(m.group(1)),
+                        minute=int(m.group(2)))
             elif k == 'work day':
-                m = re.match(r'(\d{1,2}):(\d{2})', jsdata['work day'])
-                trigger = CronTrigger(
-                    day_of_week='mon,tue,wed,thu,fri',
-                    hour=int(m.group(1)),
-                    minute=int(m.group(2)))
+                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['work day']):
+                    trigger = CronTrigger(
+                        day_of_week='mon,tue,wed,thu,fri',
+                        hour=int(m.group(1)),
+                        minute=int(m.group(2)))
             elif k == 'sat':
-                m = re.match(r'(\d{1,2}):(\d{2})', jsdata['sat'])
-                trigger = CronTrigger(
-                    day_of_week='sat',
-                    hour=int(m.group(1)),
-                    minute=int(m.group(2)))
+                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sat']):
+                    trigger = CronTrigger(
+                        day_of_week='sat',
+                        hour=int(m.group(1)),
+                        minute=int(m.group(2)))
             elif k == 'sun':
-                m = re.match(r'(\d{1,2}):(\d{2})', jsdata['sun'])
-                trigger = CronTrigger(
-                    day_of_week='sun',
-                    hour=int(m.group(1)),
-                    minute=int(m.group(2)))
+                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sun']):
+                    trigger = CronTrigger(
+                        day_of_week='sun',
+                        hour=int(m.group(1)),
+                        minute=int(m.group(2)))
             else:
                 trigger = None
         return trigger

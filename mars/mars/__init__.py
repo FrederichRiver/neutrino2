@@ -1,7 +1,7 @@
-__version__ = '1.10.35'
+__version__ = '1.11.37'
 __all__ = [
-    'network', 'task_manager', 'utils', 'database_manager', 'mail_manager',
-    'log_manager']
+    'network', 'task_manager', 'utils', 'database_manager',
+    'mail_manager', 'log_manager', ]
 
 # v1.3.19: Modify event_backup, compress after backup.
 # v1.3.20: Modification for finance_event.

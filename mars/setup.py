@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 from setuptools import setup, find_packages
-from jupiter import __version__ as v
+from mars import __version__ as v
 setup(
-        name='jupiter',
+        name='mars',
         version=v,
         packages=find_packages(),
         # install_requires=['psutil>=5.7.0',],

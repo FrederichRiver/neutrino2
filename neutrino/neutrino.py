@@ -10,10 +10,14 @@ import signal
 import sys
 import time
 from dev_global.env import LOG_FILE, PID_FILE, TASK_FILE, MANUAL, GLOBAL_HEADER
-from polaris.mysql8 import mysqlHeader, mysqlBase
-from jupiter.task_manager import taskManager, taskManager2
-from jupiter.utils import ERROR, INFO
+from polaris.mysql8 import mysqlBase
+from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from mars.task_manager import taskManager2
+from mars.utils import ERROR, INFO
 from threading import Thread
+import mars
+
 
 __version__ = '1.6.14'
 
@@ -97,10 +101,12 @@ def main_function(taskfile=None, task_line_name=''):
             }
     executor = {'default': ThreadPoolExecutor(20)}
     default_job = {'max_instance': 5}
-    Neptune = taskManager(taskfile=taskfile,
-                          jobstores=jobstores,
-                          executors=executor,
-                          job_defaults=default_job)
+    Neptune = taskManager2(
+        taskfile=taskfile,
+        task_manager='Neptune',
+        jobstores=jobstores,
+        executors=executor,
+        job_defaults=default_job)
     Neptune.start()
     INFO(f"{task_line_name} start.")
     while True:

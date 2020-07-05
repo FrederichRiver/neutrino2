@@ -1,11 +1,12 @@
 #! /usr/bin/python3
 import json
 from random import randint
+from dev_global.env import COOKIE_FILE
+from dev_global.env import HEAD_FILE
 
 
 class cookie(object):
     def __init__(self):
-        from dev_global.env import COOKIE_FILE
         self.js = None
         with open(COOKIE_FILE, 'r') as f:
             result = f.read()
@@ -17,7 +18,6 @@ class cookie(object):
 
 class RandomHeader(object):
     def __init__(self):
-        from dev_global.env import HEAD_FILE
         self.js = None
         with open(HEAD_FILE, 'r') as f:
             result = f.read()
@@ -47,7 +47,6 @@ class userAgent(object):
     result = object.random_agent, get a random User_Agent from liboratory.
     """
     def __init__(self):
-        from dev_global.env import HEAD_FILE
         self.js = None
         with open(HEAD_FILE, 'r') as f:
             result = f.read()

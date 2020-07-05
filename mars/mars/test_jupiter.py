@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-import jupiter.utils
-import jupiter.network
+import mars.utils
+import mars.network
 import dev_global
-import jupiter.database_manager
+import mars.database_manager
 import numpy as np
 import pandas as pd
 import datetime

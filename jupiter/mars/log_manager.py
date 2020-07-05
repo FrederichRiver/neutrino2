@@ -9,18 +9,23 @@ from functools import wraps
 __all__ = ['event_pack_tick_data', ]
 
 test_file = '/home/friederich/Dev/test.log'
-LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
-logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S", filename=test_file)
-logger = logging.getLogger()
+# LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+# logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
+# logger = logging.getLogger()
 
 
 def log_decorator(func):
+    LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+    logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
+    logger = logging.getLogger()
+
     @wraps(func)
     def wrapper(*args, **kv):
         try:
             result = func(*args, **kv)
         except Exception as e:
             logger.error(e)
+            result = None
         return result
     return wrapper
 
