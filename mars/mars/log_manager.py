@@ -9,15 +9,14 @@ from functools import wraps
 __all__ = ['event_pack_tick_data', ]
 
 test_file = '/home/friederich/Dev/test.log'
-# LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
-# logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
-# logger = logging.getLogger()
+LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+logging.basicConfig(
+    level=logging.INFO, format=LOG_FORMAT,
+    datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
+logger = logging.getLogger()
 
 
 def log_decorator(func):
-    LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
-    logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
-    logger = logging.getLogger()
     @wraps(func)
     def wrapper(*args, **kv):
         try:
@@ -28,10 +27,47 @@ def log_decorator(func):
     return wrapper
 
 
-@log_decorator
-def user_test(x: str):
-    print(x)
-    raise TypeError("TEST")
+def log_decorator2(func):
+    @wraps(func)
+    def wrapper(*args, **kv):
+        try:
+            func(*args, **kv)
+        except Exception as e:
+            logger.error(e)
+        return func
+    return wrapper
+
+
+def system_loop(func):
+    @wraps(func)
+    def wrapper(*args, **kv):
+        try:
+            func(*args, **kv)
+        except Exception as e:
+            logger.error(e)
+            raise SystemExit(1)
+        return func
+    return wrapper
+
+
+def info_log(text):
+    logging.basicConfig(filename=LOG_FILE,
+                        level=logging.INFO,
+                        filemode='a',
+                        format="%(asctime)s [%(levelname)s]: %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S")
+    logger = logging.getLogger()
+    logger.info(text)
+
+
+def error_log(text):
+    logging.basicConfig(filename=LOG_FILE,
+                        level=logging.ERROR,
+                        filemode='a',
+                        format="%(asctime)s [%(levelname)s]: %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S")
+    logger = logging.getLogger()
+    logger.error(text)
 
 
 class filePack(object):
@@ -82,6 +118,4 @@ def event_pack_tick_data():
 
 
 if __name__ == "__main__":
-    import sys
-    print(sys.version)
-    user_test(1)
+    pass

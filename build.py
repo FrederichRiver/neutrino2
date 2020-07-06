@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python38
 import os
 from dev_global.env import PROJ_PATH
 

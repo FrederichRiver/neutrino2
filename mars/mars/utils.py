@@ -4,7 +4,6 @@ import logging
 import pandas as pd
 import datetime
 import re
-from pandas import read_csv
 import functools
 import psutil
 from dev_global.env import CONF_FILE, LOG_FILE, SQL_FILE, TIME_FMT

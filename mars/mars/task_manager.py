@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/python38
 # -*- coding: utf-8 -*-
 
 import imp
 import json
-import os
 import re
 import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from mars.utils import ERROR
-from mars.log_manager import log_decorator
+from mars.log_manager import log_decorator, log_decorator2
 # modules loaded into module list
 import venus.api_stock_event
 import taurus.nlp_event
@@ -33,153 +31,12 @@ def decoration_print(func):
     return wrap_func
 
 
-class taskManager(BackgroundScheduler):
-    """
-    Task manager is a object to manage tasks.
-    It will run tasks according to task.json file.
-    It will auto load modules without reboot system.
-    """
-    def __init__(self, taskfile=None, gconfig={}, **options):
-        super(BackgroundScheduler, self).__init__(
-            gconfig=gconfig, **options)
-        # if task file is not found.
-        if not taskfile:
-            ERROR("Task file is not found.")
-        else:
-            self.module_list = [
-                venus.api_stock_event, taurus.nlp_event,
-                mars.database_manager, saturn.finance_event,
-                saturn.balance_analysis,
-                mars.mail_manager, mars.log_manager]
-            self.taskfile = taskfile
-            self.func_list = {}
-            self.reload_event()
-
-    def reload_event(self):
-        """
-        This function will reload modules automatically.
-        """
-        import imp
-        try:
-            for mod in self.module_list:
-                imp.reload(mod)
-                for func in mod.__all__:
-                    # print(mod.__name__, func)
-                    self.func_list[func] = eval(f"{mod.__name__}.{func}")
-        except Exception as e:
-            ERROR(e)
-            ERROR(f"Can not find module {mod.__name__}, {func}.")
-
-    def task_resolve(self, jsdata):
-        """
-        Resolve the task file into job and trigger.
-        File format is json.
-        Return: {job: trigger}
-        """
-        tasklist = {}
-        for task in jsdata:
-            # job_resolve
-            try:
-                job = self.func_list[self.job_resolve(task)]
-                trigger = self.trigger_resolve(task)
-            except KeyError:
-                ERROR(f"Job {self.job_resolve(task)} could not be found.")
-            except Exception as e:
-                ERROR(e)
-            # trigger_resolve
-            if job and trigger:
-                tasklist[job] = trigger
-        # print(tasklist)
-        # format:
-        # { job_function<function> : job_trigger<trigger> }
-        return tasklist
-
-    def job_resolve(self, jsdata):
-        """
-        Filter of task file which can filt the incorrect
-        config content.
-        """
-        jobname = jsdata['task'] if 'task' in jsdata.keys() else None
-        return jobname
-
-    def trigger_resolve(self, jsdata):
-        """
-        Resolve the trigger.
-        """
-        for k in jsdata.keys():
-            if k == 'day_of_week':
-                trigger = CronTrigger(day_of_week=jsdata['day_of_week'])
-            elif k == 'day':
-                trigger = CronTrigger(day=jsdata['day'])
-            elif k == 'hour':
-                trigger = CronTrigger(hour=jsdata['hour'])
-            elif k == 'time':
-                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['time']):
-                    trigger = CronTrigger(
-                        hour=int(m.group(1)),
-                        minute=int(m.group(2)))
-            elif k == 'work day':
-                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['work day']):
-                    trigger = CronTrigger(
-                        day_of_week='mon,tue,wed,thu,fri',
-                        hour=int(m.group(1)),
-                        minute=int(m.group(2)))
-            elif k == 'sat':
-                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sat']):
-                    trigger = CronTrigger(
-                        day_of_week='sat',
-                        hour=int(m.group(1)),
-                        minute=int(m.group(2)))
-            elif k == 'sun':
-                if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sun']):
-                    trigger = CronTrigger(
-                        day_of_week='sun',
-                        hour=int(m.group(1)),
-                        minute=int(m.group(2)))
-            else:
-                trigger = None
-        return trigger
-
-    def check_task_file(self):
-        # if task file not exist, send a warning.
-        if os.path.exists(self.taskfile):
-            # INFO("Task file checking successd.")
-            self.append_task()
-        else:
-            ERROR("Task plan file is not found.")
-
-    def append_task(self):
-        # if exist, resolve the task file.
-        try:
-            with open(self.taskfile, 'r') as js:
-                load_dict = json.load(js)
-                result = self.task_resolve(load_dict)
-            job_list = self.get_jobs()
-            jobexist = False
-            for (k, v) in result.items():
-                for job in job_list:
-                    if k.__name__ == job.id:
-                        self.reschedule_job(k.__name__, trigger=v)
-                        jobexist = True
-                if not jobexist:
-                    self.add_job(k, trigger=v, id=k.__name__)
-                    print(f'add job {k.__name__}\n')
-                jobexist = False
-            # self.task_report()
-        except Exception as e:
-            ERROR("Append task error: ", e)
-
-    def task_report(self):
-        print('+-'*15)
-        self.print_jobs()
-        print('+-'*15)
-
-
 class taskManager2(BackgroundScheduler):
     """
     Task manager is a object to manage tasks.
     It will run tasks according to task.json file.
     It will auto load modules without reboot system.
+    Process : load_event -> load_task_file
     """
     def __init__(self, taskfile=None, task_manager_name=None, gconfig={}, **options):
         super(BackgroundScheduler, self).__init__(gconfig=gconfig, **options)
@@ -198,19 +55,14 @@ class taskManager2(BackgroundScheduler):
         h, m = timedelta_convert(runtime)
         return f"<Task manager ({self.task_manager_name}) has running for {h}:{str(m).zfill(2)}:00>"
 
-    def check_task_file(self):
-        # if task file not exist, send a warning.
-        if os.path.exists(self.taskfile):
-            self.append_task()
-        else:
-            ERROR("Task plan file is not found.")
-
     def _update_task_list(self):
         self._task_list = self.get_jobs()
 
     def check_task_list(self):
         temp_task_list = self.load_task_list()
+        self._update_task_list()
         for task in temp_task_list:
+            task.flag = 'add'
             for old_task in self._task_list:
                 if task.name == old_task.name:
                     if task.trigger != old_task.trigger:
@@ -219,8 +71,6 @@ class taskManager2(BackgroundScheduler):
                         task.flag = 'changed'
                     else:
                         task.flag = 'no change'
-                else:
-                    task.flag = 'add'
         return temp_task_list
 
     def task_manage(self, task_list):
@@ -238,27 +88,6 @@ class taskManager2(BackgroundScheduler):
             task = self.task_solver.task_resolve(task_data)
             task_list.append(task)
         return task_list
-
-    def append_task(self):
-        # if exist, resolve the task file.
-        try:
-            with open(self.taskfile, 'r') as js:
-                load_dict = json.load(js)
-                result = self.task_resolve(load_dict)
-            job_list = self.get_jobs()
-            jobexist = False
-            for (k, v) in result.items():
-                for job in job_list:
-                    if k.__name__ == job.id:
-                        self.reschedule_job(k.__name__, trigger=v)
-                        jobexist = True
-                if not jobexist:
-                    self.add_job(k, trigger=v, id=k.__name__)
-                    print(f'add job {k.__name__}\n')
-                jobexist = False
-            # self.task_report()
-        except Exception as e:
-            ERROR("Append task error: ", e)
 
     @decoration_print
     def task_report(self):
@@ -294,7 +123,7 @@ class taskSolver(object):
         else:
             raise FileNotFoundError(taskfile)
 
-    @log_decorator
+    @log_decorator2
     def load_event(self):
         """
         This function will reload modules automatically.
@@ -376,12 +205,13 @@ def timedelta_convert(dt: datetime.timedelta) -> tuple:
 
 def format_timedelta(dt: datetime.timedelta) -> str:
     h, m = timedelta_convert(dt)
-    return f"{h}:{m}"
+    return f"{h}:{str(m).zfill(2)}"
 
 
 if __name__ == "__main__":
     import datetime
-    event = taskManager2('/home/friederich/Dev/neutrino2/config/task.json', 'Neptune')
+    event = taskManager2(
+        '/home/friederich/Dev/neutrino2/config/task.json', 'Neptune')
     event.task_solver.load_event()
     # print(event.task_solver.func_list)
     result = event.task_solver.load_task_file()
