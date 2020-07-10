@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 import time
 from dev_global.env import CONF_FILE, GLOBAL_HEADER, TIME_FMT
-from jupiter.utils import ERROR, read_url, set_date_as_index, data_clean
+from mars.utils import ERROR, read_url, set_date_as_index, data_clean
 from lxml import etree
 from venus.stock_base import StockEventBase
 from venus.stock_base import dataLine
@@ -39,7 +39,7 @@ class EventInterest(StockEventBase):
         """
         import pandas as pd
         import numpy as np
-        from jupiter.utils import ERROR, read_url, data_clean
+        from mars.utils import ERROR, read_url, data_clean
         url = read_url('URL_fh_163', CONF_FILE)
         url = url.format(stock_code[2:])
         # result is a list of DataFrame table.
@@ -61,7 +61,7 @@ class EventInterest(StockEventBase):
 
     def batch_insert_interest_to_sql(self, df):
         from venus.stock_base import dataLine
-        from jupiter.utils import ERROR
+        from mars.utils import ERROR
         if not df.empty:
             dataline = dataLine('stock_interest')
             sql_list = dataline.insert_sql(df)
@@ -73,7 +73,7 @@ class EventInterest(StockEventBase):
 
     def price_adjust(self, stock_code):
         import datetime
-        from jupiter.utils import ERROR
+        from mars.utils import ERROR
         select_col = (
             "trade_date,close_price,prev_close_price"
         )

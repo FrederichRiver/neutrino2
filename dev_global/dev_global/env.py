@@ -11,16 +11,16 @@ PYTHON_VERSION = 3.6
 LOCAL_TIME_ZONE = 'Beijing'
 TIME_FMT = '%Y-%m-%d'
 
-
+"""
 if os.getenv('SERVER') == 'MARS':
     ROOT_PATH = '/root/'
     SOFT_PATH = '/opt/neutrino/'
 else:
     ROOT_PATH = '/home/friederich/Dev/neutrino2/'
     SOFT_PATH = '/home/friederich/Dev/neutrino2/'
-
-
-PROJ_PATH = '/home/friederich/Dev/neutrino2'
+"""
+ROOT_PATH = '/root/'
+SOFT_PATH = '/opt/neutrino/'
 
 encode = 'wAKO0tFJ8ZH38RW4WseZnQ=='
 

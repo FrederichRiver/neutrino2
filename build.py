@@ -1,9 +1,7 @@
 #!/usr/bin/python38
 import os
-from dev_global.env import PROJ_PATH
 
-# PROJ_PATH = '/home/friederich/Dev/neutrino2'
-
+PROJ_PATH = '/home/friederich/Dev/neutrino2'
 lib_list = ['dev_global', 'mars', 'polaris', 'venus', 'saturn', 'taurus']
 for lib in lib_list:
     # go into library directory

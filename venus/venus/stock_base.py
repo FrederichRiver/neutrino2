@@ -7,7 +7,7 @@ import requests
 from lxml import etree
 from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader)
-from jupiter.utils import trans
+from mars.utils import trans
 
 
 __version__ = '1.0.10'

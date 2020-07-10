@@ -4,7 +4,7 @@ import json
 import re
 import requests
 from lxml import etree
-from jupiter.utils import ERROR
+from mars.utils import ERROR
 from taurus.model import article
 from polaris.mysql8 import mysqlHeader, mysqlBase
 from sqlalchemy import Column, String, Integer, Float, Date, Text

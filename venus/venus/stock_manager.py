@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from dev_global.env import CONF_FILE, TIME_FMT
-from jupiter.utils import read_url, ERROR, drop_space, INFO
+from mars.utils import read_url, ERROR, drop_space, INFO
 from venus.stock_base import StockEventBase
 from sqlalchemy.types import Date, DECIMAL, Integer, NVARCHAR
 from venus.form import formStockManager

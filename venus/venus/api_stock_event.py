@@ -118,7 +118,7 @@ def event_init_interest():
     import numpy as np
     from dev_global.env import GLOBAL_HEADER
     from venus.stock_interest import EventInterest
-    from jupiter.utils import ERROR
+    from mars.utils import ERROR
     event = EventInterest(GLOBAL_HEADER)
     event.get_all_stock_list()
     for stock_code in event.stock_list:
@@ -190,7 +190,7 @@ def event_rehabilitation():
 def event_record_company_infomation():
     from dev_global.env import GLOBAL_HEADER
     from venus.company import EventCompany
-    from jupiter.utils import ERROR, INFO
+    from mars.utils import ERROR, INFO
     event = EventCompany(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
@@ -207,8 +207,8 @@ def event_finance_info():
 def event_record_company_stock_structure():
     from venus.company import EventCompany
     from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
-    from jupiter.network import delay
+    from mars.utils import ERROR
+    from mars.network import delay
     event = EventCompany(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock in stock_list:
@@ -249,8 +249,8 @@ def event_download_trade_detail_data():
     from polaris.mysql8 import mysqlHeader
     from venus.stock_manager import EventTradeDataManager
     import datetime
-    from jupiter.utils import ERROR
-    from jupiter.network import delay
+    from mars.utils import ERROR
+    from mars.network import delay
     event = EventTradeDataManager(GLOBAL_HEADER)
     today = datetime.date.today()
     trade_date_list = [
@@ -287,7 +287,7 @@ def event_record_orgid():
 
 def event_download_balance_data():
     from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
+    from mars.utils import ERROR
     from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
@@ -299,7 +299,7 @@ def event_download_balance_data():
 
 def event_download_cashflow_data():
     from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
+    from mars.utils import ERROR
     from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
@@ -312,7 +312,7 @@ def event_download_cashflow_data():
 
 def event_download_income_data():
     from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
+    from mars.utils import ERROR
     from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()

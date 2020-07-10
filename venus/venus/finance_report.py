@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 from venus.stock_base import StockEventBase, dataLine
-from jupiter.utils import read_url, CONF_FILE, trans
+from mars.utils import read_url, CONF_FILE, trans
 
 
 class EventFinanceReport(StockEventBase):
@@ -28,7 +28,7 @@ class EventFinanceReport(StockEventBase):
         """
         import re
         from venus.form import balance_column
-        from jupiter.utils import data_clean
+        from mars.utils import data_clean
         # config file is a url file.
         # _, url = read_json('URL_163_MONEY', CONF_FILE)
         df = pd.read_csv(url, encoding='gb18030')
@@ -70,7 +70,7 @@ class EventFinanceReport(StockEventBase):
         """
         import re
         from venus.form import cashflow_column
-        from jupiter.utils import data_clean
+        from mars.utils import data_clean
         # config file is a url file.
         # _, url = read_json('URL_163_MONEY', CONF_FILE)
         df = pd.read_csv(url, encoding='gb18030')
@@ -112,7 +112,7 @@ class EventFinanceReport(StockEventBase):
         """
         import re
         from venus.form import income_column
-        from jupiter.utils import data_clean
+        from mars.utils import data_clean
         # config file is a url file.
         # _, url = read_json('URL_163_MONEY', CONF_FILE)
         df = pd.read_csv(url, encoding='gb18030')
@@ -134,7 +134,7 @@ class EventFinanceReport(StockEventBase):
 
 def db_init():
     from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
+    from mars.utils import ERROR
     from polaris.mysql8 import create_table, mysqlBase, mysqlHeader
     from venus.form import formTemplate, formFinanceTemplate, formInfomation
     try:

@@ -8,7 +8,7 @@ from functools import wraps
 
 __all__ = ['event_pack_tick_data', ]
 
-test_file = '/home/friederich/Dev/test.log'
+# test_file = '/home/friederich/Dev/test.log'
 LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
 logging.basicConfig(
     level=logging.INFO, format=LOG_FORMAT,

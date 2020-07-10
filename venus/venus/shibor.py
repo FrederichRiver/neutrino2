@@ -24,7 +24,7 @@ class EventShibor(StockEventBase):
 
     def get_shibor_data(self, df):
         from dev_global.env import GLOBAL_HEADER, TIME_FMT
-        from jupiter.utils import ERROR
+        from mars.utils import ERROR
         try:
             if not df.empty:
                 df.columns = [
