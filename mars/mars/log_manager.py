@@ -17,22 +17,30 @@ logger = logging.getLogger()
 
 
 def log_decorator(func):
+    """
+    decorate function with return value.
+    """
     @wraps(func)
     def wrapper(*args, **kv):
         try:
             result = func(*args, **kv)
         except Exception as e:
+            logger.error(func.__name__)
             logger.error(e)
         return result
     return wrapper
 
 
 def log_decorator2(func):
+    """
+    decorate function without return value.
+    """
     @wraps(func)
     def wrapper(*args, **kv):
         try:
             func(*args, **kv)
         except Exception as e:
+            logger.error(func.__name__)
             logger.error(e)
         return func
     return wrapper

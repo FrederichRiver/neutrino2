@@ -2,10 +2,16 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-
+import time
+# import re
+import datetime
+from mars.log_manager import info_log, log_decorator2
 from dev_global.env import GLOBAL_HEADER
 from polaris.mysql8 import create_table, mysqlBase, mysqlHeader
 from venus.stock_base import StockEventBase
+
+from venus.form import formTemplate, formFinanceTemplate, formInfomation
+
 
 __version__ = '1.1.6'
 __all__ = ['event_mysql_backup', 'event_initial_database']
@@ -43,7 +49,6 @@ class databaseBackup(object):
             os.system(dumpcmd)
 
     def file_compress(self):
-        import time
         zip_time = time.strftime('%Y-%m-%d')
         file_name = 'mysql_database'
         compress_file = f"{self.backup_path}{file_name}_{zip_time}.tar.gz"
@@ -51,8 +56,6 @@ class databaseBackup(object):
         os.system(f"tar -czvPf {compress_file} {self.temp_path}")
 
     def remove_old_backup(self):
-        import re
-        import datetime
         file_list = os.listdir(self.backup_path)
         for f in file_list:
             file_name, file_time = self.get_file_info(self.backup_path + f)
@@ -63,48 +66,33 @@ class databaseBackup(object):
         import datetime
         timestamp = datetime.datetime.now()
         dest_time = timestamp - datetime.timedelta(days=n)
-        return dest_time        
+        return dest_time
 
     def get_file_info(self, file_name):
         """
         get timestamp from file info.
         return type timestamp
         """
-        import os
-        import datetime
         result = os.stat(file_name)
         file_time = datetime.datetime.fromtimestamp(result.st_mtime)
         return file_name, file_time
 
 
+@log_decorator2
 def event_initial_database():
-    from dev_global.env import GLOBAL_HEADER
-    from jupiter.utils import ERROR
-    from polaris.mysql8 import create_table, mysqlBase, mysqlHeader
-    from venus.form import formTemplate, formFinanceTemplate, formInfomation
-    try:
-        # root_header = mysqlHeader('root', '6414939', 'stock')
-        # mysql = mysqlBase(root_header)
-        mysql = mysqlBase(GLOBAL_HEADER)
-        create_table(formTemplate, mysql.engine)
-        create_table(formFinanceTemplate, mysql.engine)
-        create_table(formInfomation, mysql.engine)
-    except Exception as e:
-        ERROR(e)
-        ERROR("Database initialize failed.")
+    mysql = mysqlBase(GLOBAL_HEADER)
+    create_table(formTemplate, mysql.engine)
+    create_table(formFinanceTemplate, mysql.engine)
+    create_table(formInfomation, mysql.engine)
 
 
+@log_decorator2
 def event_mysql_backup():
-    from jupiter.database_manager import databaseBackup
-    from jupiter.utils import ERROR, INFO
-    try:
-        event = databaseBackup()
-        event.get_database_list()
-        event.database_backup()
-        event.file_compress()
-        INFO(f"Database backup successfully.")
-    except Exception as e:
-        ERROR(e, "Database backup failed.")
+    event = databaseBackup()
+    event.get_database_list()
+    event.database_backup()
+    event.file_compress()
+    info_log("Database backup successfully.")
 
 
 def event_mysql_remove_backup():
@@ -114,13 +102,13 @@ def event_mysql_remove_backup():
 
 
 def change_stock_template_definition():
-    from dev_global.env import GLOBAL_HEADER
-    from polaris.mysql8 import mysqlHeader
-    from venus.stock_base import StockEventBase
     root_header = mysqlHeader('stock', 'stock2020', 'stock')
     event = StockEventBase(root_header)
     stock_list = event.get_all_stock_list()
-    col = ['close_price','highest_price', 'lowest_price','open_price','prev_close_price','change_rate','amplitude','turnover']
+    col = [
+        'close_price', 'highest_price', 'lowest_price',
+        'open_price', 'prev_close_price', 'change_rate', 'amplitude',
+        'turnover']
     for stock_code in stock_list:
         # print(stock_code)
         for name in col:
@@ -130,6 +118,7 @@ def change_stock_template_definition():
         event.mysql.engine.execute(sql)
         sql = f"alter table {stock_code} change adjust_factor adjust_factor float default 1"
         event.mysql.engine.execute(sql)
+
 
 def test():
     event = databaseBackup()
@@ -147,7 +136,7 @@ if __name__ == "__main__":
             print(e)
     elif sys.argv[1] == "backup":
         try:
-            event_database_backup()
+            event_mysql_backup()
         except Exception as e:
             print(e)
     elif sys.argv[1] == "test":

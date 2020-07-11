@@ -1,4 +1,16 @@
 #!/usr/bin/python3
+from venus.company import EventCompany
+from dev_global.env import GLOBAL_HEADER
+from mars.network import delay
+from venus.finance_report import EventFinanceReport
+from venus.stock_manager import EventTradeDataManager
+import pandas
+from venus.shibor import EventShibor
+import datetime
+from venus.cninfo import cninfoSpider
+from mars.utils import ERROR
+from functools import wraps
+from mars.log_manager import logger
 
 
 __version__ = '1.2.15'
@@ -45,6 +57,7 @@ def decoration_stock_event(func):
     return wrap_func
 """
 
+
 def event_init_stock():
     """
     Init database from a blank stock list.
@@ -57,6 +70,31 @@ def event_init_stock():
     stock_list = sl.get_stock()
     for stock in stock_list:
         event.record_stock(stock)
+
+
+def all_stock_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kv):
+        try:
+            func(*args, **kv)
+        except Exception as e:
+            logger.error(e)
+        return func
+    return wrapper
+
+
+def log_decorator(func):
+    """
+    decorate function with return value.
+    """
+    @wraps(func)
+    def wrapper(*args, **kv):
+        try:
+            result = func(*args, **kv)
+        except Exception as e:
+            logger.error(e)
+        return result
+    return wrapper
 
 
 def event_record_new_stock():
@@ -114,7 +152,6 @@ def event_flag_quit_stock():
 
 # event record interest
 def event_init_interest():
-    import time
     import numpy as np
     from dev_global.env import GLOBAL_HEADER
     from venus.stock_interest import EventInterest
@@ -173,6 +210,7 @@ def event_flag_index():
         if re.match(r'^SH000|^SH950|^SZ399', stock_code):
             event.flag_index(stock_code)
 
+
 def event_flag_hk_stock():
     import re
     from dev_global.env import GLOBAL_HEADER
@@ -183,14 +221,12 @@ def event_flag_hk_stock():
         if re.match(r'^HK', stock_code):
             event.flag_hk_stock(stock_code)
 
+
 def event_rehabilitation():
     pass
 
 
 def event_record_company_infomation():
-    from dev_global.env import GLOBAL_HEADER
-    from venus.company import EventCompany
-    from mars.utils import ERROR, INFO
     event = EventCompany(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
@@ -205,23 +241,18 @@ def event_finance_info():
 
 
 def event_record_company_stock_structure():
-    from venus.company import EventCompany
-    from dev_global.env import GLOBAL_HEADER
-    from mars.utils import ERROR
-    from mars.network import delay
     event = EventCompany(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock in stock_list:
         try:
-            #print(stock)
+            # print(stock)
             event.record_stock_structure(stock)
             delay(10)
         except Exception as e:
             ERROR(e)
 
+
 def event_download_finance_report():
-    from dev_global.env import GLOBAL_HEADER
-    from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock in stock_list:
@@ -233,9 +264,6 @@ def event_download_finance_report():
 
 
 def event_update_shibor():
-    import pandas
-    from dev_global.env import GLOBAL_HEADER
-    from venus.shibor import EventShibor
     event = EventShibor(GLOBAL_HEADER)
     year_list = range(2006, pandas.Timestamp.today().year + 1)
     for year in year_list:
@@ -245,12 +273,6 @@ def event_update_shibor():
 
 
 def event_download_trade_detail_data():
-    from dev_global.env import GLOBAL_HEADER
-    from polaris.mysql8 import mysqlHeader
-    from venus.stock_manager import EventTradeDataManager
-    import datetime
-    from mars.utils import ERROR
-    from mars.network import delay
     event = EventTradeDataManager(GLOBAL_HEADER)
     today = datetime.date.today()
     trade_date_list = [
@@ -268,16 +290,12 @@ def event_download_trade_detail_data():
 
 
 def event_get_hk_list():
-    from dev_global.env import GLOBAL_HEADER
-    from venus.cninfo import cninfoSpider
     event = cninfoSpider(GLOBAL_HEADER)
     df = event.get_hk_stock_list()
     event._insert_stock_manager(df)
 
 
 def event_record_orgid():
-    from dev_global.env import GLOBAL_HEADER
-    from venus.cninfo import cninfoSpider
     event = cninfoSpider(GLOBAL_HEADER)
     df = event.get_stock_list()
     event._update_stock_manager(df)
@@ -286,21 +304,16 @@ def event_record_orgid():
 
 
 def event_download_balance_data():
-    from dev_global.env import GLOBAL_HEADER
-    from mars.utils import ERROR
-    from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
         try:
             event.update_balance(stock_code)
-        except Exception as e:
+        except Exception:
             ERROR(f"Error occours while recording {stock_code} balance sheet.")
 
+
 def event_download_cashflow_data():
-    from dev_global.env import GLOBAL_HEADER
-    from mars.utils import ERROR
-    from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
@@ -310,10 +323,8 @@ def event_download_cashflow_data():
             ERROR(f"Error occours while recording {stock_code} cashflow sheet.")
             ERROR(e)
 
+
 def event_download_income_data():
-    from dev_global.env import GLOBAL_HEADER
-    from mars.utils import ERROR
-    from venus.finance_report import EventFinanceReport
     event = EventFinanceReport(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
@@ -323,9 +334,8 @@ def event_download_income_data():
             ERROR(f"Error occours while recording {stock_code} income sheet.")
             ERROR(e)
 
+
 def event_set_ipo_date():
-    from venus.stock_manager import EventTradeDataManager
-    from dev_global.env import GLOBAL_HEADER
     event = EventTradeDataManager(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
     for stock_code in stock_list:
@@ -333,13 +343,4 @@ def event_set_ipo_date():
 
 
 if __name__ == "__main__":
-    # event_download_finance_report()
-    # event_download_stock_data()
-    # event_record_new_stock()
-    # event_flag_quit_stock()
-    # event_flag_index()
-    # event_record_cooperation_info()
-    # event_update_shibor()
-    # event_init_interest()
-    # event_download_trade_detail_data()
-    event_init_stock()
+    pass

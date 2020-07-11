@@ -34,6 +34,7 @@ class HeaderException(BaseException):
     def __str__(self) -> str:
         return "Error occurs due to mysql header."
 
+
 class StockEventBase(object):
     """
     Today: date format like yyyy-mm-dd \n

@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 import os
-from jupiter.database_manager import event_mysql_backup
+import sys
+from mars.database_manager import (
+    event_mysql_backup, event_initial_database,
+    change_stock_template_definition)
 __version__ = '1.0.3'
 
 
@@ -19,25 +22,20 @@ def neutrino_install():
             cmd = "cp -u -v %s %s" % (obj_fi, dest_fi)
             os.system(cmd)
         elif os.path.isdir(fi):
-            solve_dir(obj_fi+'/')
+            pass  # solve_dir(obj_fi+'/')
         else:
             pass
 
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) != 2:
         print("maint init|backup")
         raise SystemExit(1)
     if sys.argv[1] == "init":
-        from jupiter.database_manager import event_initial_database
         event_initial_database()
     elif sys.argv[1] == "backup":
         event_mysql_backup()
     elif sys.argv[1] == "install":
         neutrino_install()
     elif sys.argv[1] == "test":
-        from jupiter import database_manager
-        database_manager.change_stock_template_definition()
-    else:
-        pass
+        change_stock_template_definition()
