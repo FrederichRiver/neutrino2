@@ -86,7 +86,8 @@ class taskManager2(BackgroundScheduler):
         task_list = []
         for task_data in jsdata:
             task = self.task_solver.task_resolve(task_data)
-            task_list.append(task)
+            if task:
+                task_list.append(task)
         return task_list
 
     @decoration_print

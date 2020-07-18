@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from dev_global.env import LOG_FILE
 from functools import wraps
 
@@ -10,10 +11,12 @@ __all__ = ['event_pack_tick_data', ]
 
 # test_file = '/home/friederich/Dev/test.log'
 LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+Time_Handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
 logging.basicConfig(
     level=logging.INFO, format=LOG_FORMAT,
     datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
-logger = logging.getLogger()
+neutrino_logger = logging.getLogger()
+neutrino_logger.addHandler(Time_Handler)
 
 
 def log_decorator(func):
@@ -25,8 +28,8 @@ def log_decorator(func):
         try:
             result = func(*args, **kv)
         except Exception as e:
-            logger.error(func.__name__)
-            logger.error(e)
+            neutrino_logger.error(f"<Module> {func.__name__}")
+            neutrino_logger.error(f"<Message> {e}")
         return result
     return wrapper
 
@@ -40,8 +43,8 @@ def log_decorator2(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            logger.error(func.__name__)
-            logger.error(e)
+            neutrino_logger.error(f"<Module> {func.__name__}")
+            neutrino_logger.error(f"<Message> {e}")
         return func
     return wrapper
 

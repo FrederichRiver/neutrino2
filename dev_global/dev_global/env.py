@@ -7,9 +7,10 @@ global environment varibles
 
 """
 
-PYTHON_VERSION = 3.6
+PYTHON_VERSION = 3.8
 LOCAL_TIME_ZONE = 'Beijing'
 TIME_FMT = '%Y-%m-%d'
+LOG_TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 """
 if os.getenv('SERVER') == 'MARS':
