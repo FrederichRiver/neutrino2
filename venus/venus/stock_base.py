@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import datetime
-import numpy as np
 import pandas as pd
 import re
 import requests
@@ -8,6 +7,7 @@ from lxml import etree
 from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader)
 from mars.utils import trans
+from mars.log_manager import error_log
 
 
 __version__ = '1.0.10'
@@ -66,7 +66,7 @@ class StockEventBase(object):
                 else:
                     pass
             except Exception:
-                ERROR(
+                error_log(
                     f"Error while record interest of {col['char_stock_code']}")
         return df
 
@@ -159,6 +159,7 @@ class StockEventBase(object):
     def close(self):
         self.mysql.engine.close()
 
+
 class EventStockList(StockEventBase):
     def get_all_stock_list(self):
         """
@@ -194,7 +195,8 @@ class EventStockList(StockEventBase):
         df = pd.DataFrame.from_dict(result)
         result = df['stock_code'].tolist()
         return result
- 
+
+
 class StockCodeFormat(object):
     def __call__(self, stock_code):
         if type(stock_code) == str:
@@ -217,7 +219,7 @@ class StockCodeFormat(object):
         input: SZ000001, return: 1000001.
         """
         stock_code = self.__call__(stock_code)
-        if type(stock_code) == str:
+        if isinstance(stock_code, str):
             if stock_code[:2] == 'SH':
                 stock_code = '0' + stock_code[2:]
             elif stock_code[:2] == 'SZ':
@@ -229,57 +231,72 @@ class StockCodeFormat(object):
         return stock_code
 
 
-class StockList(object):
+class StockCodeList(object):
+    """
+    Generate stock code list.
+    API:
+    1. get_stock()
+    """
     def __init__(self):
         pass
 
-    def get_sh_stock(self):
+    @staticmethod
+    def _get_sh_stock():
         stock_list = [f"SH60{str(i).zfill(4)}" for i in range(4000)]
         return stock_list
 
-    def get_sz_stock(self):
+    @staticmethod
+    def _get_sz_stock():
         stock_list = [f"SZ{str(i).zfill(6)}" for i in range(1, 1000)]
         return stock_list
 
-    def get_cyb_stock(self):
+    @staticmethod
+    def _get_cyb_stock():
         stock_list = [f"SZ300{str(i).zfill(3)}" for i in range(1, 1000)]
         return stock_list
 
-    def get_zxb_stock(self):
+    @staticmethod
+    def _get_zxb_stock():
         stock_list = [f"SZ002{str(i).zfill(3)}" for i in range(1, 1000)]
         return stock_list
 
-    def get_b_stock(self):
+    @staticmethod
+    def _get_b_stock():
         s1 = [f"SH900{str(i).zfill(3)}" for i in range(1, 1000)]
         s2 = [f"SZ200{str(i).zfill(3)}" for i in range(1, 1000)]
         stock_list = s1 + s2
         return stock_list
 
-    def get_index(self):
+    @staticmethod
+    def _get_index():
         index1 = [f"SH000{str(i).zfill(3)}" for i in range(1000)]
         index2 = [f"SH950{str(i).zfill(3)}" for i in range(1000)]
         index3 = [f"SZ399{str(i).zfill(3)}" for i in range(1000)]
         stock_list = index1 + index2 + index3
         return stock_list
 
-    def get_kcb_stock(self):
+    @staticmethod
+    def _get_kcb_stock():
         stock_list = [f"SH688{str(i).zfill(3)}" for i in range(1000)]
         return stock_list
 
-    def get_xsb_stock(self):
+    @staticmethod
+    def _get_xsb_stock():
         stock_list = [f"SH83{str(i).zfill(3)}" for i in range(1000)]
         return stock_list
 
-    def get_stock(self):
-        stock_list = self.get_sh_stock()
-        stock_list += self.get_sz_stock()
-        stock_list += self.get_cyb_stock()
-        stock_list += self.get_zxb_stock()
-        stock_list += self.get_kcb_stock()
-        stock_list += self.get_b_stock()
+    @staticmethod
+    def get_stock():
+        stock_list = StockCodeList._get_sh_stock()
+        stock_list += StockCodeList._get_sz_stock()
+        stock_list += StockCodeList._get_cyb_stock()
+        stock_list += StockCodeList._get_zxb_stock()
+        stock_list += StockCodeList._get_kcb_stock()
+        stock_list += StockCodeList._get_b_stock()
         return stock_list
 
-    def get_fund(self):
+    @staticmethod
+    def _get_fund():
         pass
 
 
@@ -331,7 +348,6 @@ class dataLine(object):
 
 
 if __name__ == "__main__":
-    from dev_global.env import GLOBAL_HEADER
     event = StockBase("test")
-    #event = StockBase(GLOBAL_HEADER)
+    # event = StockBase(GLOBAL_HEADER)
     print(event.Today)

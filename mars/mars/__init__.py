@@ -1,4 +1,4 @@
-__version__ = '1.11.41'
+__version__ = '1.12.42'
 __all__ = [
     'network', 'task_manager', 'utils', 'database_manager',
     'mail_manager', 'log_manager', ]

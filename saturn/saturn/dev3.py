@@ -16,4 +16,4 @@ class EventSignal(SignalEngineBase):
 
 class SignalBase(object):
     def __init__(self) -> None:
-        pass
+        self.event_date = None

@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 
 from venus.cninfo import cninfoSpider
-
+from polaris.mysql8 import mysqlBase
+from dev_global.env import GLOBAL_HEADER, TIME_FMT
+import requests
+import datetime
+import time
+import random
 
 class cninfoAnnounce(cninfoSpider):
     def _set_param(self):
-        from polaris.mysql8 import mysqlBase
-        from dev_global.env import GLOBAL_HEADER
+        self.path = 'root'
         self.index = mysqlBase(GLOBAL_HEADER)
         self.url = 'http://www.cninfo.com.cn/new/hisAnnouncement/query'
         self.http_header = {
@@ -26,6 +30,10 @@ class cninfoAnnounce(cninfoSpider):
         self.form_data = 'stock=603019%2C9900023134&tabName=fulltext&pageSize=30&pageNum=1&column=sse&category=&plate=sh&seDate=&searchkey=&secid=&sortName=&sortType=&isHLtitle=true'
 
     def set_formdata(self, stock_code, orgid, page, total_page=30):
+        """
+        translate formdata from json to string.
+        Return : a string of query data.
+        """
         form_data = {
             "stock": f'{stock_code[2:]}%2C{orgid}',
             "tabName": 'fulltext',
@@ -47,7 +55,6 @@ class cninfoAnnounce(cninfoSpider):
             line = k + '=' + v
             temp.append(line)
         result = '&'.join(temp)
-        # print(result)
         return result
 
     def set_http_header(self, stock_code, flag):
@@ -59,48 +66,84 @@ class cninfoAnnounce(cninfoSpider):
     def get_cookie(self):
         pass
 
-    def run(self):
-        stock_code = 'SH601818'
-        self.index.select_one('stock_manager', 'orgid', f"stock_code='{stock_code}'")
-        self.form_data = self.set_formdata('SH601818', '9900006246', 1)
-        resp = self.request.post(self.url, data=self.form_data, headers=self.http_header)
-        j_list = resp.json()['announcements']
-        for ann in j_list:
+    def run(self, stock_code: str):
+        """
+        Record announcement into database.
+        """
+        select_orgid = self.index.select_one('stock_manager', 'orgid', f"stock_code='{stock_code}'")
+        i = 1
+        while has_more := self.resolve_announce_page(stock_code, select_orgid[0], i):
+            i += 1
+            time.sleep(random.randint(3, 10))
+
+    def resolve_announce_page(self, stock_code: str, orgid: str, page):
+        self.form_data = self.set_formdata(stock_code, orgid, page)
+        resp = self.request.post(
+            self.url, data=self.form_data, headers=self.http_header)
+        json_result_list = resp.json()
+        self.record_announce_page(stock_code, json_result_list)
+        hasMore = json_result_list["hasMore"]
+        return hasMore
+
+    def record_announce_page(self, stock_code, json_content_list: dict):
+        import pymysql
+        json_list = json_content_list['announcements']
+        for ann in json_list:
+            # title = base64.b64encode(ann['announcementTitle'].encode())
+            title = pymysql.Binary(ann['announcementTitle'].encode())
             sql = (
                 f"INSERT IGNORE into announcement_manager ("
-                f"announcement_id,stock_code,title,timestamp,url,announce_type) "
+                f"announcement_id,stock_code,title,announce_timestamp,url,announce_type) "
                 "VALUES ("
                 f"'{ann['announcementId']}','{stock_code}',"
-                f"'{ann['announcementTitle']}',{ann['announcementTime']/1000},"
+                f"%s,{ann['announcementTime']/1000},"
                 f"'{ann['adjunctUrl']}','{ann['announcementType']}')"
             )
-            self.mysql.engine.execute(sql)
+            self.mysql.engine.execute(sql, title)
+        return json_content_list["hasMore"]
 
     def get_pdf_url(self, ann_id):
-        import datetime
         result = self.mysql.condition_select(
-            'announcement_manager', 'stock_code,announcement_id,title,timestamp,url',
+            'announcement_manager', 'stock_code,announcement_id,title,announce_timestamp,url',
             f"announcement_id='{ann_id}'")
-        pdf_name = result[0][0] + '_' + result[2][0] + '_' + result[1][0] + '_' + str(datetime.datetime.fromtimestamp(int(result[3][0]))) + '.pdf'
+        pdf_name = result[0][0] + '_' + str(result[2][0], encoding='utf-8') + '_' + result[1][0] + '_' + datetime.datetime.fromtimestamp(int(result[3][0])).strftime(TIME_FMT) + '.pdf'
         url = 'http://static.cninfo.com.cn/' + result[4][0]
         return pdf_name, url
 
     def save_pdf(self, pdf_name, url):
-        import requests
         r = requests.get(url)
-        filename = "requests.pdf"
+        pdf_name = '/home/friederich/Dev/test/' + pdf_name
+        # filename = "requests.pdf"
         with open(pdf_name, 'wb+') as f:
             f.write(r.content)
 
 
-if __name__ == "__main__":
+def event_record_announce_url():
+    from polaris.mysql8 import mysqlHeader
     from dev_global.env import GLOBAL_HEADER
+    from venus.stock_base import StockEventBase
+    event_stock_list = StockEventBase(GLOBAL_HEADER)
+    stock_list = event_stock_list.get_all_stock_list()
+    mysql_header = mysqlHeader('stock', 'stock2020', 'natural_language')
+    event = cninfoAnnounce(mysql_header)
+    event._set_param()
+    for stock in stock_list:
+        event.run(stock)
+
+
+if __name__ == "__main__":
+    event_record_announce_url()
+    """
     from polaris.mysql8 import mysqlHeader
     mysql_header = mysqlHeader('stock', 'stock2020', 'natural_language')
     event = cninfoAnnounce(mysql_header)
     event._set_param()
-    event.run()
+    # event.run('SH601818')
     # u = 'http://static.cninfo.com.cn/finalpage/2020-03-28/1207419694.PDF'
     # event.save_pdf(u)
-    url, pdf_name = event.get_pdf_url('1207418549')
-    event.save_pdf(url, pdf_name)
+    df = event.mysql.select_values('announcement_manager', 'announcement_id')
+    ann_id_list = list(df[0])
+    for ann_id in ann_id_list:
+        pdf_name, url = event.get_pdf_url(ann_id)
+        event.save_pdf(pdf_name, url)
+    """

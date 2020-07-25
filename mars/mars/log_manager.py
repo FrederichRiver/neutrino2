@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+import logging.config
 from logging.handlers import TimedRotatingFileHandler
 from dev_global.env import LOG_FILE
 from functools import wraps
@@ -9,14 +10,24 @@ from functools import wraps
 
 __all__ = ['event_pack_tick_data', ]
 
-# test_file = '/home/friederich/Dev/test.log'
-LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
-Time_Handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
-logging.basicConfig(
-    level=logging.INFO, format=LOG_FORMAT,
-    datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
+
+test_file = '/home/friederich/Dev/test.log'
+logging.basicConfig(filename=LOG_FILE)
 neutrino_logger = logging.getLogger()
+neutrino_logger.setLevel(logging.INFO)
+Time_Handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
+
+
+LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+neu_format = logging.Formatter(LOG_FORMAT)
+Time_Handler.setFormatter(neu_format)
 neutrino_logger.addHandler(Time_Handler)
+
+"""
+neu_format = logging.basicConfig(
+                level=logging.INFO, format=LOG_FORMAT,
+                datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
+"""
 
 
 def log_decorator(func):
@@ -55,7 +66,7 @@ def system_loop(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            logger.error(e)
+            neutrino_logger.error(e)
             raise SystemExit(1)
         return func
     return wrapper
@@ -128,5 +139,10 @@ def event_pack_tick_data():
         event.package(flag)
 
 
+@log_decorator2
+def test(text):
+    raise Exception('test error')
+
+
 if __name__ == "__main__":
-    pass
+    test('test')
