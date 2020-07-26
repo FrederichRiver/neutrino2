@@ -70,6 +70,13 @@ def create_relationship_in_gics_node(graph: Graph):
     t.commit()
 
 
+def test(graph: Graph):
+    tx = graph.begin()
+    tx.create(Node('test'))
+    tx.commit()
+
+
 if __name__ == "__main__":
-    create_gics_node(graph)
-    create_relationship_in_gics_node(graph)
+    # create_gics_node(graph)
+    # create_relationship_in_gics_node(graph)
+    test(x)

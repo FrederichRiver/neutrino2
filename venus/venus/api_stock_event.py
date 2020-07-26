@@ -10,7 +10,7 @@ import datetime
 from venus.cninfo import cninfoSpider
 from mars.utils import ERROR
 from functools import wraps
-from mars.log_manager import logger
+from mars.log_manager import neutrino_logger
 
 
 __version__ = '1.2.15'
@@ -78,7 +78,7 @@ def all_stock_decorator(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            logger.error(e)
+            neutrino_logger.error(e)
         return func
     return wrapper
 

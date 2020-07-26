@@ -1,19 +1,84 @@
-#! /usr/bin/env python3
-import hashlib
-import json
+#! /usr/bin/env python38
 import re
+import json
 import requests
-from lxml import etree
+import lxml
 from mars.utils import ERROR
-from taurus.model import article
+from taurus.model import article, ArticleBase
 from polaris.mysql8 import mysqlHeader, mysqlBase
-from sqlalchemy import Column, String, Integer, Float, Date, Text
+from sqlalchemy import Column, String, Integer, Date, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 
 __version__ = '1.2.4'
 
 article_base = declarative_base()
+
+
+class NeteaseArticle(ArticleBase):
+    def __init__(self, html, url):
+        super(NeteaseArticle, self).__init__()
+        if not isinstance(html, lxml.etree._Element):
+            raise TypeError('html type error')
+        self._get_url(url)
+        self._get_title(html)
+        self._get_author(html)
+        self._get_date(html)
+        self._get_source(html)
+        self._get_content(html)
+
+    def _get_url(self, url):
+        self.j_dict['url'] = url
+
+    def _get_date(self, input_content):
+        regex_date = r'\d{4}-\d{2}-\d{2}'
+        date_string = input_content.xpath("//div[@class='post_time_source']/text()")
+        for s in date_string:
+            result = re.search(regex_date, s)
+            if result:
+                self.j_dict['date'] = result[0]
+
+    def _get_title(self, input_content):
+        title = input_content.xpath("//div/h1/text()")
+        if title:
+            self.j_dict['title'] = title[0].strip()
+
+    def _get_source(self, input_content):
+        source = input_content.xpath("//div[@class='ep-source cDGray']/span[@class='left']/text()")
+        if source:
+            result = re.split(r'：', source[0])
+            self.j_dict['source'] = result[1].strip()
+
+    def _get_author(self, input_content):
+        author = input_content.xpath("//span[@class='ep-editor']/text()")
+        if author:
+            result = re.split(r'：', author[0])
+            self.j_dict['author'] = result[1].strip()
+
+    def _get_content(self, input_content):
+        """
+        tag: //div[@class=post_text] for netease finance
+        """
+        html = input_content.xpath("//div[@class='post_text']/p//text()")
+        content = ''
+        for line in html:
+            content += line
+        content = content.strip()
+        content = content.replace(' ', '')
+        content = content.replace('\n', '')
+        self.j_dict['content'] = content
+
+    @staticmethod
+    def save_content_text(html, filename):
+        with open(filename, 'w') as f:
+            f.write(html)
+
+    def article_to_json(self, filename):
+        with open(filename, 'w') as f:
+            f.write(json.dumps(self.j_dict, ensure_ascii=False, indent=4))
+
+    def article_to_sql(self):
+        pass
 
 
 class formArticle(article_base):
@@ -190,15 +255,11 @@ class SinaNewsSpider(newsSpiderBase):
 
 
 if __name__ == "__main__":
-    from dev_global.env import SOFT_PATH
-    header = mysqlHeader('stock', 'stock2020', 'natural_language')
-    event = newsSpider(header, SOFT_PATH)
-    event.generate_url_list()
-    for url in event.url_list:
-        event.extract_href(url)
-    event.save_process()
-    # hfile = SOFT_PATH + 'config/HREF_LIST'
-    # event.load_href_file(hfile)
-    for url in event.href:
-        art = event.extract_article(url)
-        event.record_article(art)
+    url = 'https://money.163.com/20/0725/18/FIDBIU90002580S6.html'
+    cont = requests.get(url)
+    html = lxml.etree.HTML(cont.text)
+    art = NeteaseArticle(html, url)
+    # art.save_content_text(text_content, '/home/friederich/Documents/test/Test2.html')
+    art.article_to_json('/home/friederich/Documents/article.json')
+    print('end')
+

@@ -1,11 +1,10 @@
 #! /usr/bin/env python3
-import hashlib
 import re
-import requests
 from lxml import etree
 from polaris.mysql8 import mysqlHeader, mysqlBase
 from sqlalchemy import Column, String, Integer, Float, Date, Text
 from sqlalchemy.ext.declarative import declarative_base
+import lxml
 
 
 __version__ = 2
@@ -40,6 +39,54 @@ class formArticle(article_base):
     content = Column(Text)
 
 
+class ArticleBase(object):
+    def __init__(self):
+        self.j_dict = {}
+
+    @property
+    def title(self) -> str:
+        return self.j_dict['title']
+
+    @property
+    def author(self) -> str:
+        return self.j_dict['author']
+
+    @property
+    def release_date(self):
+        return self.j_dict['date']
+
+    @property
+    def source(self) -> str:
+        return self.j_dict['source']
+
+    @property
+    def url(self) -> str:
+        return self.j_dict['url']
+
+    @url.setter
+    def url(self, value):
+        self.j_dict['url'] = value
+
+    @property
+    def content(self):
+        return self.j_dict['content']
+
+    def _get_title(self, input_content):
+        raise NotImplementedError
+
+    def _get_author(self, input_content):
+        raise NotImplementedError
+
+    def _get_date(self, input_content):
+        raise NotImplementedError
+
+    def _get_source(self, input_content):
+        raise NotImplementedError
+
+    def _get_content(self, input_content):
+        raise NotImplementedError
+
+
 class article(object):
     def __init__(self):
         self.title = ""
@@ -50,7 +97,6 @@ class article(object):
         self.url = ""
 
     def _get_date(self, html):
-        import lxml
         if not isinstance(html, lxml.etree._Element):
             raise TypeError('html type error')
         date_string = html.xpath("//div[@class='post_time_source']/text()")
@@ -61,7 +107,6 @@ class article(object):
         return None
 
     def _get_title(self, html):
-        import lxml
         if not isinstance(html, lxml.etree._Element):
             raise TypeError('html type error')
         title = html.xpath("//div/h1/text()")
@@ -70,7 +115,6 @@ class article(object):
         return title
 
     def _get_source(self, html):
-        import lxml
         if not isinstance(html, lxml.etree._Element):
             raise TypeError('html type error')
         source = html.xpath("//div[@class='ep-source cDGray']/span[@class='left']/text()")
@@ -81,7 +125,6 @@ class article(object):
             return None
 
     def _get_author(self, html):
-        import lxml
         if not isinstance(html, lxml.etree._Element):
             raise TypeError('html type error')
         author = html.xpath("//span[@class='ep-editor']/text()")

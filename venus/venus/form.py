@@ -1,14 +1,28 @@
-#!/usr/bin/python3
-from sqlalchemy import Column, String, Integer, Float, Date
+#!/usr/bin/python38
+from sqlalchemy import Column, String, Integer, Float, Date, BLOB
 from sqlalchemy.ext.declarative import declarative_base
 
 
-__version__ = '1.0.12'
+__version__ = (1, 0, 13)
 
+# Form:
+# 1.Company_info
+# 2.Company_stock_structure
+# 3.
 
 formTemplate = declarative_base()
 formFinanceTemplate = declarative_base()
 formInfomation = declarative_base()
+
+
+class announce_manager(formInfomation):
+    __tablename__ = 'announce_manager'
+    announce_id = Column(String(12))
+    stock_code = Column(String(10))
+    title = Column(BLOB())
+    announce_timestamp = Column(int(15))
+    url = Column(String(100))
+    announce_type = Column(String(20))
 
 
 class company_info(formInfomation):
@@ -34,6 +48,7 @@ class company_stock_structure(formInfomation):
     stock_name = Column(String(10))
     report_date = Column(Date, primary_key=True)
     total_stock = Column(Float)
+
 
 class formInterest(formTemplate):
     """
@@ -68,6 +83,7 @@ class formStockManager(formTemplate):
     def __str__(self):
         return "<Stock Manager>"
 
+
 formStockManager_column = [
     "stock_code", "stock_name", "orgId", "short_code", "create_date", "modified_date",
     "xrdr_date", "balance_date", "income_date", "cashflow_date", "flag"
@@ -92,17 +108,19 @@ class formStock(formTemplate):
     def __str__(self):
         return "<Stock template>"
 
+
 formStock_column = [
     'trade_date', 'stock_code', 'stock_name', 'close_price', 'highest_price',
     'lowest_price', 'open_price', 'prev_close_price', 'change_rate', 'amplitude',
     'volume', 'turnover']
+
 
 class formBalance(formFinanceTemplate):
     __tablename__ = 'balance_sheet'
     report_date = Column(Date, primary_key=True)
     char_stock_code = Column(String(10), primary_key=True)
     float_assets = Column(Float, comment='assets')
-    float_c1_current_assets= Column(Float, comment='current assets')
+    float_c1_current_assets = Column(Float, comment='current assets')
     float_c1_1 = Column(Float, comment='bank and cash')
     float_c1_2 = Column(Float, comment='provision_of_settlement_fund')
     float_c1_3 = Column(Float, comment='lent_fund')

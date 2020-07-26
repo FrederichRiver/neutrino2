@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-import os
+#!/usr/bin/python38
 from polaris.mysql8 import mysqlHeader
 
 """
@@ -11,6 +10,9 @@ PYTHON_VERSION = 3.8
 LOCAL_TIME_ZONE = 'Beijing'
 TIME_FMT = '%Y-%m-%d'
 LOG_TIME_FMT = "%Y-%m-%d %H:%M:%S"
+
+GITHUB_URL = "https://github.com/FrederichRiver/neutrino2"
+EMAIL = "hezhiyuan_tju@163.com"
 
 """
 if os.getenv('SERVER') == 'MARS':

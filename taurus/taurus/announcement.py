@@ -8,6 +8,9 @@ import datetime
 import time
 import random
 
+__all__ = ['event_record_announce_url',]
+
+
 class cninfoAnnounce(cninfoSpider):
     def _set_param(self):
         self.path = 'root'

@@ -1,4 +1,3 @@
-from msg import NoneHeaderError
 from stock_base import StockEventBase, dataLine
 
 

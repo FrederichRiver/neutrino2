@@ -1,5 +1,11 @@
 #!/usr/bin/python3
-from venus.stock_base import StockEventBase
+import requests
+from mars.network import userAgent, cookie
+from polaris.mysql8 import mysqlBase
+from mars.utils import ERROR
+import json
+import pandas
+import re
 
 
 class spiderBase(object):
@@ -8,10 +14,7 @@ class spiderBase(object):
     http_user_agent.random_agent(): get a random User_Agent.
     http_cookie.get_cookie(cookie_name): return a cookie by name 'cookie_name'.
     """
-    def __init__(self, mysql_header):
-        import requests
-        from jupiter.network import userAgent, cookie
-        from polaris.mysql8 import mysqlBase
+    def __init__(self, mysql_header):    
         self.mysql = mysqlBase(mysql_header)
         self.http_user_agent = userAgent()
         self.http_cookie = cookie()
@@ -40,10 +43,7 @@ class spiderBase(object):
 
 
 class cninfoSpider(spiderBase):
-    def get_stock_list(self):
-        import json
-        import pandas
-        import re
+    def get_stock_list(self):  
         url = 'http://www.cninfo.com.cn/new/data/szse_stock.json'
         result = self.request.get(url, self.http_header)
         jr = json.loads(result.text)
@@ -57,9 +57,6 @@ class cninfoSpider(spiderBase):
         return df
 
     def get_hk_stock_list(self):
-        import json
-        import pandas
-        import re
         url = 'http://www.cninfo.com.cn/new/data/hke_stock.json'
         result = self.request.get(url, self.http_header)
         jr = json.loads(result.text)
@@ -70,9 +67,6 @@ class cninfoSpider(spiderBase):
         return df
 
     def get_fund_stock_list(self):
-        import json
-        import pandas
-        import re
         url = 'http://www.cninfo.com.cn/new/data/fund_stock.json'
         result = self.request.get(url, self.http_header)
         jr = json.loads(result.text)
@@ -83,9 +77,6 @@ class cninfoSpider(spiderBase):
         return df
 
     def get_bond_stock_list(self):
-        import json
-        import pandas
-        import re
         url = 'http://www.cninfo.com.cn/new/data/bond_stock.json'
         result = self.request.get(url, self.http_header)
         jr = json.loads(result.text)
@@ -96,7 +87,6 @@ class cninfoSpider(spiderBase):
         return df
 
     def _insert_stock_manager(self, df):
-        from jupiter.utils import ERROR
         for index, row in df.iterrows():
             try:
                 insert_sql = (
@@ -110,8 +100,7 @@ class cninfoSpider(spiderBase):
             except Exception as e:
                 ERROR(e)
 
-    def _update_stock_manager(self, df):
-        from jupiter.utils import ERROR
+    def _update_stock_manager(self, df):        
         for index, row in df.iterrows():
             try:
                 update_sql = (

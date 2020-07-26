@@ -11,6 +11,7 @@ from mars.log_manager import log_decorator, log_decorator2
 # modules loaded into module list
 import venus.api_stock_event
 import taurus.nlp_event
+import taurus.announcement
 import saturn.finance_event
 import saturn.balance_analysis
 import mars.database_manager
@@ -112,6 +113,7 @@ class taskSolver(object):
             self.module_list = [
                 venus.api_stock_event,
                 taurus.nlp_event,
+                taurus.announcement,
                 mars.database_manager,
                 saturn.finance_event,
                 saturn.balance_analysis,
