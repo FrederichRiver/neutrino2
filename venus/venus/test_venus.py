@@ -87,6 +87,25 @@ def unit_test_absolute_path():
     print(absolute_path(y,z))
     print(absolute_path(y,z2))
 
+
+def unit_test_stockBase():
+    from venus.stock_base import StockBase
+    from polaris.mysql8 import GLOBAL_HEADER
+    event = StockBase(GLOBAL_HEADER)
+    result = event.get_all_stock_list()
+    print(result)
+
+
+def unit_test_stock_manager():
+    from polaris.mysql8 import GLOBAL_HEADER
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('totalstocklist')
+    event = EventTradeDataManager(GLOBAL_HEADER)
+    result = event.get_trade_data('SH600000', event.today)
+    print(result)
+
+
 if __name__ == "__main__":
     # unit_test_NoneHeaderError()
     # unit_test_stockEventBase()
@@ -94,4 +113,5 @@ if __name__ == "__main__":
     # unit_test_stock_interest()
     # unit_test_dataline()
     # unit_test_financeReport()
-    unit_test_stockcode()
+    # unit_test_stockBase()
+    unit_test_stock_manager()

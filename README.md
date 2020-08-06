@@ -1,4 +1,6 @@
+
 # 关于Neutrino
+
 作者：Friederich River
 
 email：hezhiyuan_tju@163.com
@@ -27,5 +29,10 @@ TO DO:
     Neo4j应用
     Install：    从neo4j的官方网站下载neo4j-server的安装包，解压缩后直接cp到/opt目录
     Run： /opt/neo4j/bin/neo4j start 运行server
-    Visit： http://localhost:7474 可访问neo4j server
+    Visit： <http://localhost:7474> 可访问neo4j server
     Operation: 使用Cypher语言进行查询。
+
+--  
+
+1. event_init_stock
+2. event

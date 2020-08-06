@@ -1,6 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/python38
 
-__version__ = 1
+__version__ = (1, 0, 1)
 
 
 def test():

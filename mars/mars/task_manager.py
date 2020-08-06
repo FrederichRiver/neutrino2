@@ -3,11 +3,11 @@
 
 import imp
 import json
+from mars.log_manager import log_decorator
 import re
 import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from mars.log_manager import log_decorator, log_decorator2
 # modules loaded into module list
 import venus.api_stock_event
 import taurus.nlp_event
@@ -126,7 +126,7 @@ class taskSolver(object):
         else:
             raise FileNotFoundError(taskfile)
 
-    @log_decorator2
+    @log_decorator
     def load_event(self):
         """
         This function will reload modules automatically.
@@ -136,7 +136,6 @@ class taskSolver(object):
             for func in mod.__all__:
                 self.func_list[func] = eval(f"{mod.__name__}.{func}")
 
-    @log_decorator
     def task_resolve(self, jsdata: json):
         task = None
         if task_name := jsdata.get('task'):

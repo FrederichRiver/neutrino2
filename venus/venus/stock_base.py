@@ -3,36 +3,86 @@ import datetime
 import pandas as pd
 import re
 import requests
+import lxml
 from lxml import etree
 from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader)
 from mars.utils import trans
 from mars.log_manager import error_log
+from requests.models import HTTPError
+from venus.form import formStockManager
 
 
 __version__ = '1.0.10'
 
 
-class StockBase(object):
+class StockBase(mysqlBase):
     """
     param  header: mysqlHeader
     """
     def __init__(self, header):
-        self._Today = datetime.date.today().strftime(TIME_FMT)
-        self.today = datetime.date.today().strftime('%Y%m%d')
         if not isinstance(header, mysqlHeader):
-            raise HeaderException()
-        self.mysql = mysqlBase(header)
+            raise HeaderException("Error due to incorrect header.")
+        super(StockBase, self).__init__(header)
+        # date format: YYYY-mm-dd
+        self._Today = datetime.date.today().strftime(TIME_FMT)
+        # date format: YYYYmmdd
+        self.today = datetime.date.today().strftime('%Y%m%d')
+        # self.TAB_STOCK_MANAGER = "stock_manager"
 
     @property
-    def Today(self):
+    def Today(self) -> str:
         self._Today = datetime.date.today().strftime(TIME_FMT)
         return self._Today
 
+    def get_all_stock_list(self) -> list:
+        """
+        Return stock code --> list.
+        """
+        query_stock_code = self.session.query(formStockManager.stock_code).filter_by(flag='t')
+        df = pd.DataFrame.from_dict(query_stock_code)
+        stock_list = df['stock_code'].tolist()
+        # should test if stock list is null
+        return stock_list
+
+    def get_all_index_list(self):
+        """
+        Return stock code --> list.
+        """
+        query_stock_code = self.session.query(formStockManager.stock_code).filter_by(flag='i')
+        df = pd.DataFrame.from_dict(query_stock_code)
+        stock_list = df['stock_code'].tolist()
+        return stock_list
+
+    def get_all_security_list(self):
+        """
+        Return stock code --> list
+        """
+        # Return all kinds of securities in form stock list.
+        # Result : List type data.
+        query_stock_code = self.session.query(formStockManager.stock_code).all()
+        df = pd.DataFrame.from_dict(query_stock_code)
+        stock_list = df['stock_code'].tolist()
+        return stock_list
+
+    @staticmethod
+    def get_html_object(url: str, HttpHeader=None):
+        """
+        result is a etree.HTML object
+        """
+        response = requests.get(url, HttpHeader=None, timeout=3)
+        if response.status_code == 200:
+            # setting encoding
+            response.encoding = response.apparent_encoding
+            html = lxml.etree.HTML(response.text)
+        else:
+            html = None
+            raise HTTPError(f"Status code: {response.status_code} for {url}")
+        return html
+
 
 class HeaderException(BaseException):
-    def __str__(self) -> str:
-        return "Error occurs due to mysql header."
+    pass
 
 
 class StockEventBase(object):
@@ -84,7 +134,7 @@ class StockEventBase(object):
             "stock_manager", "stock_code", "flag='t'"
         )
         df = pd.DataFrame.from_dict(query)
-        self.stock_list = df[0].tolist()
+        self.stock_list = df['stock_code'].tolist()
         return self.stock_list
 
     def get_all_index_list(self):
@@ -95,7 +145,7 @@ class StockEventBase(object):
             "stock_manager", "stock_code", "flag='i'"
         )
         df = pd.DataFrame.from_dict(query)
-        self.stock_list = df[0].tolist()
+        self.stock_list = df['stock_code'].tolist()
         return self.stock_list
 
     def get_all_security_list(self):
@@ -199,12 +249,11 @@ class EventStockList(StockEventBase):
 
 class StockCodeFormat(object):
     def __call__(self, stock_code):
-        if type(stock_code) == str:
+        if isinstance(stock_code, str):
             # format <SH600000> or <SZ000001>
             stock_code = stock_code.upper()
-            if re.match(r'(\d{6}).([A-Z][A-Z])\Z', stock_code):
+            if result := re.match(r'(\d{6}).([A-Z][A-Z])\Z', stock_code):
                 # format <600000.SH> or <000001.SZ>
-                result = re.match(r'(\d{6}).([A-Z][A-Z]\Z)', stock_code)
                 stock_code = result.group(2)+result.group(1)
             elif re.match(r'[A-Z][A-Z]\d{6}', stock_code):
                 # format <SH600000> or <SZ000001>
@@ -237,9 +286,6 @@ class StockCodeList(object):
     API:
     1. get_stock()
     """
-    def __init__(self):
-        pass
-
     @staticmethod
     def _get_sh_stock():
         stock_list = [f"SH60{str(i).zfill(4)}" for i in range(4000)]
@@ -293,6 +339,7 @@ class StockCodeList(object):
         stock_list += StockCodeList._get_zxb_stock()
         stock_list += StockCodeList._get_kcb_stock()
         stock_list += StockCodeList._get_b_stock()
+        stock_list += StockCodeList._get_index()
         return stock_list
 
     @staticmethod
@@ -348,6 +395,6 @@ class dataLine(object):
 
 
 if __name__ == "__main__":
-    event = StockBase("test")
-    # event = StockBase(GLOBAL_HEADER)
-    print(event.Today)
+    from polaris.mysql8 import GLOBAL_HEADER
+    event = StockBase(GLOBAL_HEADER)
+    result = event.get_all_stock_list()

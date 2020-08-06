@@ -6,7 +6,7 @@ from mars.utils import read_url, drop_space
 from venus.stock_base import StockEventBase
 from sqlalchemy.types import Date, DECIMAL, Integer, NVARCHAR
 from venus.form import formStockManager
-from mars.log_manager import log_decorator, log_decorator2, info_log
+from mars.log_manager import info_log, log_decorator
 
 
 class EventTradeDataManager(StockEventBase):
@@ -30,7 +30,6 @@ class EventTradeDataManager(StockEventBase):
         result = pd.read_csv(url, encoding='gb18030')
         return result
 
-    @log_decorator
     def get_stock_name(self, stock_code):
         """
         Searching stock name from net ease.
@@ -41,6 +40,7 @@ class EventTradeDataManager(StockEventBase):
             stock_name = drop_space(result.iloc[1, 2])
         return stock_code, stock_name
 
+    @log_decorator
     def record_stock(self, stock_code):
         """
         Record table <stock_code> into database.
@@ -83,7 +83,6 @@ class EventTradeDataManager(StockEventBase):
         df = df.dropna(axis=0, how='any')
         return df
 
-    @log_decorator2
     def init_stock_data(self, stock_code):
         """
         used when first time download stock data.
@@ -124,7 +123,6 @@ class EventTradeDataManager(StockEventBase):
                     {"update_date": self.Today})
         self.mysql.session.commit()
 
-    @log_decorator2
     def download_stock_data(self, stock_code):
         query_result = self.mysql.select_one(
             'stock_manager', 'update_date', f"stock_code='{stock_code}'"
@@ -162,7 +160,6 @@ class EventTradeDataManager(StockEventBase):
                     f"Where stock_code='{stock_code}'")
             self.mysql.engine.execute(update_sql)
 
-    @log_decorator2
     def get_trade_detail_data(self, stock_code, trade_date):
         # trade_date format: '20191118'
         root_path = '/root/download/'
@@ -277,15 +274,4 @@ def absolute_path(file_path: str, file_name: str) -> str:
 
 
 if __name__ == "__main__":
-    from polaris.mysql8 import mysqlHeader
-    # event = EventTradeDataManager(GLOBAL_HEADER)
-    root_header = mysqlHeader('root', '6414939', 'stock')
-    event = EventTradeDataManager(root_header)
-    # stock_code = 'SH600007'
-    # event.temp_change('SH600022')
-    # event.repaire_lost_data('SH600022')
-    # event.repair_prev_close_data('SH600022')
-    # event.set_ipo_date('SH600000')
-    stock_list = event.get_all_stock_list()
-    for stock_code in stock_list:
-        event.stat_problem_data(stock_code)
+    pass

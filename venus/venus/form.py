@@ -17,10 +17,10 @@ formInfomation = declarative_base()
 
 class announce_manager(formInfomation):
     __tablename__ = 'announce_manager'
-    announce_id = Column(String(12))
+    announce_id = Column(String(12), primary_key=True)
     stock_code = Column(String(10))
     title = Column(BLOB())
-    announce_timestamp = Column(int(15))
+    announce_timestamp = Column(Integer)
     url = Column(String(100))
     announce_type = Column(String(20))
 
@@ -95,8 +95,8 @@ class formStock(formTemplate):
     trade_date = Column(Date, primary_key=True)
     stock_name = Column(String(20))
     close_price = Column(Float, default=0)
-    highest_price = Column(Float, default=0)
-    lowest_price = Column(Float, default=0)
+    high_price = Column(Float, default=0)
+    low_price = Column(Float, default=0)
     open_price = Column(Float, default=0)
     prev_close_price = Column(Float, default=0)
     change_rate = Column(Float, default=0)

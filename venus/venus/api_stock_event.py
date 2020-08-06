@@ -1,16 +1,12 @@
 #!/usr/bin/python3
 from venus.company import EventCompany
-from dev_global.env import GLOBAL_HEADER
 from mars.network import delay
 from venus.finance_report import EventFinanceReport
-from venus.stock_manager import EventTradeDataManager
 import pandas
 from venus.shibor import EventShibor
-import datetime
 from venus.cninfo import cninfoSpider
 from mars.utils import ERROR
-from functools import wraps
-from mars.log_manager import neutrino_logger
+from polaris.mysql8 import GLOBAL_HEADER
 
 
 __version__ = '1.2.15'
@@ -21,7 +17,6 @@ __all__ = [
     'event_download_income_data',
     'event_download_index_data',
     'event_download_stock_data',
-    'event_download_trade_detail_data',
     'event_flag_quit_stock',
     'event_flag_stock',
     'event_flag_b_stock',
@@ -37,80 +32,34 @@ __all__ = [
     'event_record_new_stock',
     'event_record_interest',
     'event_record_orgid',
-    'event_set_ipo_date',
     'event_update_shibor',
     ]
 
 # Event Trade Data Manager
-"""
-def decoration_stock_event(func):
-    def wrap_func(*args, **kwargs):
-        from dev_global.env import GLOBAL_HEADER
-        from venus.stock_base import EventStockList
-        StockList = EventStockList(GLOBAL_HEADER)
-        stock_list = StockList.get_all_stock_list()
-        for stock in stock_list:
-            try:
-                func(stock)
-            except Exception as e:
-                print(stock, e)
-    return wrap_func
-"""
 
 
 def event_init_stock():
     """
     Init database from a blank stock list.
     """
-    from dev_global.env import GLOBAL_HEADER
-    from venus.stock_manager import EventTradeDataManager
-    from venus.stock_base import StockList
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('totalstocklist')
     event = EventTradeDataManager(GLOBAL_HEADER)
-    sl = StockList()
-    stock_list = sl.get_stock()
-    for stock in stock_list:
-        event.record_stock(stock)
-
-
-def all_stock_decorator(func):
-    @wraps(func)
-    def wrapper(*args, **kv):
-        try:
-            func(*args, **kv)
-        except Exception as e:
-            neutrino_logger.error(e)
-        return func
-    return wrapper
-
-
-def log_decorator(func):
-    """
-    decorate function with return value.
-    """
-    @wraps(func)
-    def wrapper(*args, **kv):
-        try:
-            result = func(*args, **kv)
-        except Exception as e:
-            logger.error(e)
-        return result
-    return wrapper
+    for stock_code in stock_list:
+        event.record_stock(stock_code)
 
 
 def event_record_new_stock():
-    from dev_global.env import GLOBAL_HEADER
-    from venus.stock_base import StockList
-    from venus.stock_manager import EventTradeDataManager
-    sl = StockList()
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
     event = EventTradeDataManager(GLOBAL_HEADER)
-    stock_list = sl.get_stock()
+    stock_list = resolve_stock_list('STOCK')
     for stock_code in stock_list:
         event.record_stock(stock_code)
-        # event.init_stock_data(stock_code)
 
 
 def event_download_stock_data():
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_manager import EventTradeDataManager
     event = EventTradeDataManager(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
@@ -119,7 +68,6 @@ def event_download_stock_data():
 
 
 def event_download_index_data():
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_manager import EventTradeDataManager
     event = EventTradeDataManager(GLOBAL_HEADER)
     stock_list = event.get_all_index_list()
@@ -133,7 +81,6 @@ def event_create_interest_table():
 
 
 def event_flag_quit_stock():
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_flag import EventStockFlag
     event = EventStockFlag(GLOBAL_HEADER)
     stock_list = event.get_all_stock_list()
@@ -153,7 +100,6 @@ def event_flag_quit_stock():
 # event record interest
 def event_init_interest():
     import numpy as np
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_interest import EventInterest
     from mars.utils import ERROR
     event = EventInterest(GLOBAL_HEADER)
@@ -180,7 +126,6 @@ def event_record_interest():
 
 def event_flag_stock():
     import re
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_flag import EventStockFlag
     event = EventStockFlag(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
@@ -191,7 +136,6 @@ def event_flag_stock():
 
 def event_flag_b_stock():
     import re
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_flag import EventStockFlag
     event = EventStockFlag(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
@@ -202,7 +146,6 @@ def event_flag_b_stock():
 
 def event_flag_index():
     import re
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_flag import EventStockFlag
     event = EventStockFlag(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
@@ -213,7 +156,6 @@ def event_flag_index():
 
 def event_flag_hk_stock():
     import re
-    from dev_global.env import GLOBAL_HEADER
     from venus.stock_flag import EventStockFlag
     event = EventStockFlag(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
@@ -258,9 +200,9 @@ def event_download_finance_report():
     for stock in stock_list:
         print(f"Download finance report of {stock}.")
         # event.update_balance_sheet(stock)
-        event.update_income_statement(stock)
-        event.update_balance_sheet(stock)
-        event.update_cashflow_sheet(stock)
+        event.update_income(stock)
+        event.update_balance(stock)
+        event.update_cashflow(stock)
 
 
 def event_update_shibor():
@@ -270,23 +212,6 @@ def event_update_shibor():
         url = event.get_shibor_url(year)
         df = event.get_excel_object(url)
         event.get_shibor_data(df)
-
-
-def event_download_trade_detail_data():
-    event = EventTradeDataManager(GLOBAL_HEADER)
-    today = datetime.date.today()
-    trade_date_list = [
-        (today - datetime.timedelta(days=i)).strftime('%Y%m%d') for i in range(1, 6)
-    ]
-    stock_list = event.get_all_stock_list()
-    for trade_date in trade_date_list:
-        for stock in stock_list:
-            # print(f"Download detail trade data {stock}: {trade_date}")
-            try:
-                event.get_trade_detail_data(stock, trade_date)
-                delay(5)
-            except Exception as e:
-                ERROR(e)
 
 
 def event_get_hk_list():
@@ -335,12 +260,5 @@ def event_download_income_data():
             ERROR(e)
 
 
-def event_set_ipo_date():
-    event = EventTradeDataManager(GLOBAL_HEADER)
-    stock_list = event.get_all_stock_list()
-    for stock_code in stock_list:
-        event.set_ipo_date(stock_code)
-
-
 if __name__ == "__main__":
-    pass
+    event_init_stock()

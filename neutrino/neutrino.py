@@ -4,20 +4,22 @@ import os
 import signal
 import sys
 import time
-from dev_global.env import LOG_FILE, PID_FILE, TASK_FILE, MANUAL, GLOBAL_HEADER
-from polaris.mysql8 import mysqlBase
+from dev_global.env import LOG_FILE, PID_FILE, TASK_FILE, MANUAL
+from polaris.mysql8 import mysqlBase, GLOBAL_HEADER
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from mars.task_manager import taskManager2
 from threading import Thread
-from mars.log_manager import log_decorator2, system_loop, info_log, error_log
+from mars.log_manager import infoLog, errorLog
 
 
-__version__ = '1.6.14'
+__version__ = '1.7.15'
 
 
-@log_decorator2
-def neutrino(pid_file, log_file):
+PROG_NAME = 'Neutrino'
+
+
+def deamon(pid_file, log_file):
     # This is a daemon programe, which will start after
     # system booted.
     #
@@ -25,7 +27,7 @@ def neutrino(pid_file, log_file):
     #
     # fork a sub process from father
     if os.path.exists(pid_file):
-        raise RuntimeError('Neutrino is already running')
+        raise RuntimeError(f"{PROG_NAME} is already running")
     # the first fork.
     if os.fork() > 0:
         raise SystemExit(0)
@@ -72,10 +74,9 @@ def logfile_monitor(log_file):
                 os.dup2(write_null.fileno(), 1)
             with open(log_file, 'a') as error_null:
                 os.dup2(error_null.fileno(), 2)
-            info_log(f"Neutrino started with pid {os.getpid()}.")
+            infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
 
 
-@log_decorator2
 def neptune_pipeline(taskfile=None):
     # init task manager and main
     if not taskfile:
@@ -91,6 +92,7 @@ def neptune_pipeline(taskfile=None):
         executors={'default': ThreadPoolExecutor(20)},
         job_defaults={'max_instance': 5})
     Neptune.start()
+    infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
     while True:
         Neptune.task_solver.load_event()
         task_list = Neptune.check_task_list()
@@ -105,10 +107,9 @@ def print_info(info_file):
     print(infotext)
 
 
-@system_loop
+# @system_loop
 def main():
-    neutrino(PID_FILE, LOG_FILE)
-    info_log(f"Neutrino id is {os.getpid()}.")
+    deamon(PID_FILE, LOG_FILE)
     lm = Thread(target=logfile_monitor, args=(LOG_FILE,), name='lm', daemon=True)
     lm.start()
     neptune_pipeline(TASK_FILE)
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     # Arguments format is like 'netrino args'
     # Neutrino receives args like start stop or other.
     if len(sys.argv) != 2:
-        print("neutrino start|stop|help")
+        print(f"{PROG_NAME} start|stop|help")
         raise SystemExit(1)
     if sys.argv[1] == 'start':
         main()
@@ -128,11 +129,11 @@ if __name__ == '__main__':
             sys.stdout.flush()
             with open(LOG_FILE, 'a') as write_null:
                 os.dup2(write_null.fileno(), 1)
-                info_log("Neutrino is stopped.")
+                infoLog(f"{PROG_NAME} is stopped.")
             with open(PID_FILE) as f:
                 os.kill(int(f.read()), signal.SIGTERM)
         else:
-            error_log("Neutrino is not running.")
+            errorLog(f"{PROG_NAME} is not running.")
             raise SystemExit(1)
     elif sys.argv[1] == 'clear':
         with open(LOG_FILE, 'w') as f:

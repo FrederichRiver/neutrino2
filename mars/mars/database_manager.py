@@ -6,10 +6,8 @@ import time
 # import re
 import datetime
 from mars.log_manager import info_log, log_decorator2
-from dev_global.env import GLOBAL_HEADER
-from polaris.mysql8 import create_table, mysqlBase, mysqlHeader
+from polaris.mysql8 import GLOBAL_HEADER, create_table, mysqlBase, mysqlHeader, TEST_HEADER
 from venus.stock_base import StockEventBase
-
 from venus.form import formTemplate, formFinanceTemplate, formInfomation
 
 
@@ -22,9 +20,11 @@ __all__ = ['event_mysql_backup', 'event_initial_database']
 
 class databaseBackup(object):
     def __init__(self):
-        import os
+        # Will set environment on cloud.
         flag = os.environ.get('LOGNAME')
+        # database will be backuped.
         self.database_list = []
+        # Setting path.
         if flag == 'friederich':
             self.temp_path = '/home/friederich/Downloads/tmp/'
             self.backup_path = '/home/friederich/Downloads/neutrino/'
@@ -35,10 +35,16 @@ class databaseBackup(object):
         self.pwd = '6414939'
 
     def get_database_list(self):
+        """
+        Set database list. -> self.database_list
+        """
         self.database_list = ['stock', 'natural_language']
         return self.database_list
 
     def database_backup(self):
+        """
+        CMD : mysqldump -u user --password=pw --databases db > file.sql
+        """
         for db in self.database_list:
             dumpcmd = (
                 f"mysqldump -u {self.user} "
@@ -96,7 +102,7 @@ def event_mysql_backup():
 
 
 def event_mysql_remove_backup():
-    from jupiter.database_manager import databaseBackup
+    from mars.database_manager import databaseBackup
     event = databaseBackup()
     event.remove_old_backup()
 

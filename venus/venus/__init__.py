@@ -1,8 +1,8 @@
-__version__ = '1.12.51'
+__version__ = (1, 12, 53)
 __all__ = [
     'stock_base', 'stock_manager', 'finance_report',
     'api_stock_event', 'form', 'stock_flag', 'company',
-    'cninfo']
+    'cninfo', 'stock_manager2']
 
 # v1.5.30: Fix bug, numpy is not imported.
 # v1.5.31: Add event_download_detail_trade_data.

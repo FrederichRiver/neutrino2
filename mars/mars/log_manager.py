@@ -11,17 +11,34 @@ from functools import wraps
 __all__ = ['event_pack_tick_data', ]
 
 
-test_file = '/home/friederich/Dev/test.log'
-logging.basicConfig(filename=LOG_FILE)
-neutrino_logger = logging.getLogger()
-neutrino_logger.setLevel(logging.INFO)
+# logging.basicConfig(filename=LOG_FILE)
+# step 1: create a logger
+neulog = logging.getLogger()
+# step 2: set logger level
+neulog.setLevel(logging.INFO)
+# step 3: create a handler
 Time_Handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
-
-
+# step 4: set handler level
+Time_Handler.setLevel(logging.INFO)
+# step 5: create log format
 LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
+# step 6: add log format to handler
 neu_format = logging.Formatter(LOG_FORMAT)
 Time_Handler.setFormatter(neu_format)
-neutrino_logger.addHandler(Time_Handler)
+# step 7: add handler to logger
+
+
+def infoLog(msg: str):
+    neulog.addHandler(Time_Handler)
+    neulog.info(msg)
+    neulog.handlers.pop()
+
+
+def errorLog(msg: str):
+    neulog.addHandler(Time_Handler)
+    neulog.error(msg)
+    neulog.handlers.pop()
+
 
 """
 neu_format = logging.basicConfig(
@@ -39,8 +56,11 @@ def log_decorator(func):
         try:
             result = func(*args, **kv)
         except Exception as e:
-            neutrino_logger.error(f"<Module> {func.__name__}")
-            neutrino_logger.error(f"<Message> {e}")
+            neulog.addHandler(Time_Handler)
+            neulog.error(f"<Module> {func.__name__}")
+            neulog.error(f"<Message> {e}")
+            neulog.handlers.pop()
+            result = None
         return result
     return wrapper
 
@@ -54,8 +74,10 @@ def log_decorator2(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            neutrino_logger.error(f"<Module> {func.__name__}")
-            neutrino_logger.error(f"<Message> {e}")
+            neulog.addHandler(Time_Handler)
+            neulog.error(f"<Module> {func.__name__}")
+            neulog.error(f"<Message> {e}")
+            neulog.handlers.pop()
         return func
     return wrapper
 
@@ -66,7 +88,7 @@ def system_loop(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            neutrino_logger.error(e)
+            neulog.error(e)
             raise SystemExit(1)
         return func
     return wrapper
@@ -139,10 +161,5 @@ def event_pack_tick_data():
         event.package(flag)
 
 
-@log_decorator2
-def test(text):
-    raise Exception('test error')
-
-
 if __name__ == "__main__":
-    test('test')
+    infoLog('test')

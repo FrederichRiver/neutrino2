@@ -6,7 +6,6 @@ Auther: Friederich River
 """
 import json
 import datetime
-
 import pandas as pd
 from pandas import DataFrame
 from sqlalchemy import create_engine
@@ -95,6 +94,9 @@ class mysqlBase(object):
         return result
 
     def update_value(self, table, field, value, condition):
+        """
+        Single value update.
+        """
         sql = (f"UPDATE {table} set {field}={value} WHERE {condition}")
         self.engine.execute(sql)
 
@@ -111,11 +113,11 @@ class mysqlBase(object):
         result = self.engine.execute(sql).fetchone()
         return result
 
-    def drop_table(self, table_name):
+    def drop_table(self, table_name: str):
         sql = f"DROP TABLE {table_name}"
         self.engine.execute(sql)
 
-    def truncate_table(self, table_name):
+    def truncate_table(self, table_name: str):
         sql = f"TRUNCATE TABLE {table_name}"
         self.engine.execute(sql)
 
@@ -136,8 +138,9 @@ class mysqlBase(object):
         tableName : which is the original table name.\n
         engine : a database engine base on MySQLBase.\n
         """
-        sql = f"CREATE table {name} like {table_template}"
+        sql = f"CREATE table if not exists {name} like {table_template}"
         self.engine.execute(sql)
+        return 1
 
 
 def _drop_all(base, engine):
@@ -197,8 +200,10 @@ class Json2Sql(mysqlBase):
     """
     Translate Json data into Sql (insert or update)\n
     Working flow :\n
-    1. load_table;
-    2. to_sql (insert or update)
+    1. load_table;\n
+    2. query and fetch dataframe;\n
+    3. translate dataframe to json;\n
+    4. to_sql (insert or update)
     """
     def __init__(self, header):
         super(Json2Sql, self).__init__(header)
@@ -212,7 +217,7 @@ class Json2Sql(mysqlBase):
         self.table_def = dict()
         self.tablename = tablename
         # query for column definition.
-        sql = "Show columns from stock_manager"
+        sql = f"Show columns from {self.tablename}"
         select_value = self.engine.execute(sql)
         # translate into dataframe
         df = pd.DataFrame(select_value)
@@ -223,6 +228,18 @@ class Json2Sql(mysqlBase):
         for index, row in col_info.iterrows():
             self.table_def[row['col']] = row['col_type']
         return self.table_def
+
+    @staticmethod
+    def dataframe_to_json(df: pd.DataFrame, keys: list) -> list:
+        df.columns = keys
+        jsonlist = []
+        tmp = {}
+        for index, row in df.iterrows():
+            tmp = {}
+            for k in keys:
+                tmp[k] = row[k]
+            jsonlist.append(tmp)
+        return jsonlist
 
     def to_sql_insert(self, json_data: json):
         """
@@ -273,22 +290,21 @@ class Json2Sql(mysqlBase):
             return 'NULL'
 
 
+GLOBAL_HEADER = mysqlHeader('stock', 'stock2020', 'stock')
+TEST_HEADER = mysqlHeader('stock', 'stock2020', 'test')
+VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')
+
+
 if __name__ == '__main__':
     # h = mysqlHeader(1, '1', '1')
-    from dev_global.env import GLOBAL_HEADER
+    import dev_global.var
     j2q = Json2Sql(GLOBAL_HEADER)
-    j2q.load_table('test')
-    keys = ['stock_code', 'gmt_create', 'gmt_modified']
-    result = j2q.select_values('stock_manager', ','.join(keys))
-    result.columns = keys
-    jlist = []
-    tmp = {}
-    for index, row in result.iterrows():
-        tmp = {}
-        for k in keys:
-            tmp[k] = row[k]
-        jlist.append(tmp)
-    for d in jlist:
-        # cmd = j2q.to_sql_insert(d)
-        cmd = j2q.to_sql_update(d, ['stock_code'])
-        print(cmd)
+    j2q.load_table('template_stock')
+    df = pd.read_csv('/home/friederich/Downloads/002456.csv', names=dev_global.var.stock_table_column, encoding='gb18030')
+    tmp = dev_global.var.stock_table_column
+    # tmp.remove('stock_code')
+    # print(tmp)
+    data_list = j2q.dataframe_to_json(df, keys=tmp)
+    for data in data_list:
+        sql = j2q.to_sql_insert(data)
+        print(sql)

@@ -8,7 +8,7 @@ import datetime
 import time
 import random
 
-__all__ = ['event_record_announce_url',]
+__all__ = ['event_record_announce_url', ]
 
 
 class cninfoAnnounce(cninfoSpider):
@@ -95,8 +95,8 @@ class cninfoAnnounce(cninfoSpider):
             # title = base64.b64encode(ann['announcementTitle'].encode())
             title = pymysql.Binary(ann['announcementTitle'].encode())
             sql = (
-                f"INSERT IGNORE into announcement_manager ("
-                f"announcement_id,stock_code,title,announce_timestamp,url,announce_type) "
+                f"INSERT IGNORE into announce_manager ("
+                f"announce_id,stock_code,title,announce_timestamp,url,announce_type) "
                 "VALUES ("
                 f"'{ann['announcementId']}','{stock_code}',"
                 f"%s,{ann['announcementTime']/1000},"
@@ -107,8 +107,8 @@ class cninfoAnnounce(cninfoSpider):
 
     def get_pdf_url(self, ann_id):
         result = self.mysql.condition_select(
-            'announcement_manager', 'stock_code,announcement_id,title,announce_timestamp,url',
-            f"announcement_id='{ann_id}'")
+            'announce_manager', 'stock_code,announce_id,title,announce_timestamp,url',
+            f"announce_id='{ann_id}'")
         pdf_name = result[0][0] + '_' + str(result[2][0], encoding='utf-8') + '_' + result[1][0] + '_' + datetime.datetime.fromtimestamp(int(result[3][0])).strftime(TIME_FMT) + '.pdf'
         url = 'http://static.cninfo.com.cn/' + result[4][0]
         return pdf_name, url
