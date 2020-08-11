@@ -14,7 +14,7 @@ class spiderBase(object):
     http_user_agent.random_agent(): get a random User_Agent.
     http_cookie.get_cookie(cookie_name): return a cookie by name 'cookie_name'.
     """
-    def __init__(self, mysql_header):    
+    def __init__(self, mysql_header):
         self.mysql = mysqlBase(mysql_header)
         self.http_user_agent = userAgent()
         self.http_cookie = cookie()

@@ -1,4 +1,4 @@
-__version__ = (1, 13, 56)
+__version__ = (1, 13, 57)
 __all__ = [
     'stock_base', 'stock_base2', 'stock_manager', 'finance_report',
     'api_stock_event', 'form', 'stock_flag', 'company',

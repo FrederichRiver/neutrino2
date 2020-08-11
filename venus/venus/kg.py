@@ -2,7 +2,7 @@
 from py2neo import Graph, Node
 from py2neo.data import Relationship
 from venus.stock_base import StockEventBase
-from dev_global.env import GLOBAL_HEADER
+from polaris.mysql8 import GLOBAL_HEADER
 import re
 
 graph = Graph('http://localhost:7474', username='neo4j', password='neutrino2020')
@@ -79,4 +79,3 @@ def test(graph: Graph):
 if __name__ == "__main__":
     # create_gics_node(graph)
     # create_relationship_in_gics_node(graph)
-    test(x)

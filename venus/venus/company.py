@@ -2,10 +2,6 @@
 import pandas as pd
 import re
 import pandas
-import requests
-import random
-from polaris.mysql8 import mysqlHeader, mysqlBase
-from dev_global.env import GLOBAL_HEADER
 from venus.stock_base import StockEventBase
 
 
@@ -30,8 +26,6 @@ class EventCompany(StockEventBase):
             print(e)
 
     def record_stock_structure(self, stock_code):
-        import requests
-        from lxml import etree
         url = f"https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructureHistory/stockid/{stock_code[2:]}/stocktype/TotalStock.phtml"
         table_list = self.get_html_table(url, attr="[contains(@id,'historyTable')]")
         if table_list:
@@ -39,10 +33,9 @@ class EventCompany(StockEventBase):
                 df = self._resolve_stock_structure_table(table)
                 self._update_stock_structure(stock_code, df)
 
-
     def _resolve_stock_structure_table(self, table) -> pandas.DataFrame:
         df = pd.read_html(table)
-        #print(df)
+        # print(df)
         if df:
             df[0].columns = ['change_date', 'total_stock']
             result = df[0]
@@ -52,17 +45,18 @@ class EventCompany(StockEventBase):
         else:
             return pandas.DataFrame()
 
-    def _update_stock_structure(self, stock_code, df:pandas.DataFrame):
+    def _update_stock_structure(self, stock_code, df: pandas.DataFrame):
         TAB_COMP_STOCK_STRUC = 'company_stock_structure'
-        value = {}
+        # value = {}
         if not df.empty:
             for index, row in df.iterrows():
                 sql = (
                     f"INSERT IGNORE into {TAB_COMP_STOCK_STRUC} ("
                     f"stock_code,report_date,total_stock) "
                     f"VALUES ('{stock_code}','{row['change_date']}',{row['total_stock']})")
-                #print(sql)
+                # print(sql)
                 self.mysql.engine.execute(sql)
+
 
 def filter_str2float(x):
     result = re.match(r'(\d+)', x)
@@ -71,7 +65,6 @@ def filter_str2float(x):
     else:
         return 0
 
+
 if __name__ == "__main__":
-    from dev_global.env import GLOBAL_HEADER
-    event = EventCompany(GLOBAL_HEADER)
-    event.record_stock_structure('SH600059')
+    pass

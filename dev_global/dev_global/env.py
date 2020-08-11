@@ -1,6 +1,4 @@
 #!/usr/bin/python38
-from polaris.mysql8 import mysqlHeader
-
 """
 global environment varibles
 
@@ -35,7 +33,3 @@ HEAD_FILE = SOFT_PATH + 'config/header.json'
 COOKIE_FILE = SOFT_PATH + 'config/cookie.json'
 SQL_FILE = SOFT_PATH + 'config/sql.json'
 MANUAL = SOFT_PATH + 'config/Neutrino'
-
-
-GLOBAL_HEADER = mysqlHeader('stock', 'stock2020', 'stock')
-VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')

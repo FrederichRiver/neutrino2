@@ -8,7 +8,6 @@ import json
 import datetime
 from dev_global.env import TIME_FMT
 import pandas as pd
-import numpy as np
 from pandas import DataFrame
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -277,8 +276,10 @@ class Json2Sql(mysqlBase):
         elif isinstance(value, float):
             return f"{value}"
         elif isinstance(value, datetime.date):
-            result = 'NULL' if pd.isna(value) else value.strftime(TIME_FMT)
-            return f"'{result}'"
+            if pd.isna(value):
+                return 'NULL'
+            else:
+                return f"'{value.strftime(TIME_FMT)}'"
         else:
             return 'NULL'
 
@@ -307,4 +308,5 @@ if __name__ == '__main__':
     for data in data_list:
         # print(type(data["share_date"]))
         sql = j2q.to_sql_insert(data)
+        print(sql)
         event.engine.execute(sql)
