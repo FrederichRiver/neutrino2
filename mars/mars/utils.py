@@ -130,7 +130,7 @@ def data_clean(df):
             else:
                 pass
         except Exception as e:
-            ERROR(f"Error while data cleaning.")
+            ERROR("Error while data cleaning.")
             ERROR(e)
     return df
 

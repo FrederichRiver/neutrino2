@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 import datetime
 import pandas as pd
+from pandas import DataFrame
 import re
+import numpy as np
 import requests
-import lxml
+# import lxml
+from lxml import etree
 from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader, Json2Sql)
 from requests.models import HTTPError
 from venus.form import formStockManager
+from mars.utils import read_json
 
 
 __version__ = '1.0.10'
@@ -17,7 +21,7 @@ class StockBase(mysqlBase):
     """
     param  header: mysqlHeader
     """
-    def __init__(self, header):
+    def __init__(self, header: mysqlHeader) -> None:
         if not isinstance(header, mysqlHeader):
             raise HeaderException("Error due to incorrect header.")
         super(StockBase, self).__init__(header)
@@ -83,11 +87,53 @@ class StockBase(mysqlBase):
         if response.status_code == 200:
             # setting encoding
             response.encoding = response.apparent_encoding
-            html = lxml.etree.HTML(response.text)
+            html = etree.HTML(response.text)
         else:
             html = None
             raise HTTPError(f"Status code: {response.status_code} for {url}")
         return html
+
+    @staticmethod
+    def get_excel_object(url: str) -> pd.DataFrame:
+        df = pd.read_excel(url)
+        return df
+
+    @staticmethod
+    def set_date_as_index(df):
+        df['date'] = pd.to_datetime(df['date'], format=TIME_FMT)
+        df.set_index('date', inplace=True)
+        # exception 1, date index not exists.
+        # exception 2, date data is not the date format.
+        return df
+
+    @staticmethod
+    def dataframe_data_translate(df: DataFrame) -> DataFrame:
+        """
+        Translate data format in dataframe to correct type.
+        """
+        for index in df.columns:
+            try:
+                if re.search('date', index):
+                    df[index] = pd.to_datetime(df[index])
+                elif re.search('int', index):
+                    df[index] = pd.to_numeric(df[index])
+                    df[index].replace(np.nan, 0, inplace=True)
+                elif re.search('float', index):
+                    df[index] = pd.to_numeric(df[index])
+                    df[index].replace(np.nan, 0.0, inplace=True)
+                elif re.search('char', index):
+                    df[index].replace(np.nan, 'NULL', inplace=True)
+            except Exception:
+                pass
+        return df
+
+    @staticmethod
+    def read_url(key, url_file):
+        """
+        It is a method base on read_json, returns a url.
+        """
+        _, url = read_json(key, url_file)
+        return url
 
 
 class HeaderException(BaseException):
@@ -98,6 +144,8 @@ class StockCodeList(object):
     """
     Generate stock code list.\n
     API:   @: get_stock()\n
+           @: get_fund()\n
+           @: get_
     """
     @staticmethod
     def _get_sh_stock():
@@ -192,5 +240,9 @@ def resolve_stock_list(stock_type='STOCK'):
 if __name__ == "__main__":
     from polaris.mysql8 import GLOBAL_HEADER
     event = StockBase(GLOBAL_HEADER)
-    result = event.get_all_stock_list()
-    print(result)
+    # result = event.get_all_stock_list()
+    df = pd.DataFrame([1, 2, 3, 4])
+    df.columns = ['test']
+    df['date'] = np.nan
+    df = event.dataframe_data_translate(df)
+    print(df)

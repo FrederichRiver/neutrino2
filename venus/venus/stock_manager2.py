@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import pandas as pd
 import numpy as np
-# from datetime import timedelta
+from datetime import timedelta
 import dev_global.var
 from dev_global.env import CONF_FILE
 # from dev_global.var import stock_table_column
@@ -48,7 +48,6 @@ class EventTradeDataManager(StockBase):
         """
         # config file is a url file.
         url = self.url_netease(stock_code, start_date, end_date)
-        print(url)
         df = pd.read_csv(url, names=dev_global.var.stock_table_column, encoding='gb18030')
         return df
 
@@ -106,9 +105,9 @@ class EventTradeDataManager(StockBase):
         """
         used when first time download stock data.
         """
-        result = self.get_trade_data(stock_code, self.today)
-        result = self._clean(result)
-        result.to_sql(
+        df = self.get_trade_data(stock_code, self.today)
+        df = self._clean(df)
+        df.to_sql(
             name=stock_code,
             con=self.engine,
             if_exists='append',
@@ -116,7 +115,7 @@ class EventTradeDataManager(StockBase):
         query = self.session.query(
                 formStockManager.stock_code,
                 formStockManager.update_date
-            ).filter_by(stock_code=stock_code)
+            ).filter_by(stock_code=stock_code).first()
         if query:
             query.update({"update_date": self.Today})
         self.session.commit()
@@ -126,8 +125,8 @@ class EventTradeDataManager(StockBase):
         # fetch last update date.
         update = self.session.query(formStockManager.update_date).filter_by(stock_code=stock_code).first()
         if update[0]:
-            # tmp = update[0] + timedelta(days=1)
-            tmp = update[0]
+            tmp = update[0] + timedelta(days=1)
+            # tmp = update[0]
             update_date = tmp.strftime('%Y%m%d')
         else:
             update_date = '19901219'
@@ -135,14 +134,10 @@ class EventTradeDataManager(StockBase):
         df = self.get_trade_data(stock_code, self.today, start_date=update_date)
         df = self._clean(df)
         df = df.sort_values(['trade_date'])
-        print(df.head(5))
-        print(df.columns)
-        print(dev_global.var.stock_table_column)
         tmp = dev_global.var.stock_table_column
         tmp.remove('stock_code')
-        print(tmp)
         df_json = self.j2sql.dataframe_to_json(df, keys=tmp)
-        for data in df_json:
+        for data in df_json[:5]:
             sql = self.j2sql.to_sql_insert(data)
             self.engine.execute(sql)
 
@@ -151,6 +146,6 @@ if __name__ == "__main__":
     from polaris.mysql8 import GLOBAL_HEADER
     event = EventTradeDataManager(GLOBAL_HEADER)
     stock_code = 'SH600000'
-    # event.download_stock_data(stock_code)
-    result = event.check_stock(stock_code)
-    print(result)
+    event.download_stock_data(stock_code)
+    # result = event.check_stock(stock_code)
+    # print(result)

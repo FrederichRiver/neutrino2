@@ -3,7 +3,6 @@ from venus.company import EventCompany
 from mars.network import delay
 from venus.finance_report import EventFinanceReport
 import pandas
-from venus.shibor import EventShibor
 from venus.cninfo import cninfoSpider
 from mars.utils import ERROR
 from polaris.mysql8 import GLOBAL_HEADER
@@ -19,9 +18,6 @@ __all__ = [
     'event_download_stock_data',
     'event_flag_quit_stock',
     'event_flag_stock',
-    'event_flag_b_stock',
-    'event_flag_index',
-    'event_flag_hk_stock',
     'event_finance_info',
     'event_get_hk_list',
     'event_init_interest',
@@ -30,7 +26,6 @@ __all__ = [
     'event_record_company_infomation',
     'event_record_company_stock_structure',
     'event_record_new_stock',
-    'event_record_interest',
     'event_record_orgid',
     'event_update_shibor',
     ]
@@ -38,6 +33,7 @@ __all__ = [
 # Event Trade Data Manager
 
 
+# new frame
 def event_init_stock():
     """
     Init database from a blank stock list.
@@ -48,8 +44,10 @@ def event_init_stock():
     event = EventTradeDataManager(GLOBAL_HEADER)
     for stock_code in stock_list:
         event.record_stock(stock_code)
+        delay(5)
 
 
+# new frame
 def event_record_new_stock():
     from venus.stock_manager2 import EventTradeDataManager
     from venus.stock_base2 import resolve_stock_list
@@ -75,65 +73,51 @@ def event_download_index_data():
         event.download_stock_data(stock_code)
 
 
-# delete, not use.
-def event_create_interest_table():
-    pass
-
-
+# new frame
 def event_flag_quit_stock():
-    from venus.stock_flag import EventStockFlag
-    event = EventStockFlag(GLOBAL_HEADER)
-    stock_list = event.get_all_stock_list()
-    # stock_code = 'SH601818'
+    from venus.stock_classify import StockClassify
+    from venus.stock_base2 import resolve_stock_list
+    event = StockClassify(GLOBAL_HEADER)
+    stock_list = resolve_stock_list('STOCK')
     for stock_code in stock_list:
         flag = event.flag_quit_stock(stock_code)
         if flag:
-            flag = 'q'
-        else:
-            flag = 't'
-        sql = (
-            f"UPDATE stock_manager set flag='{flag}' "
-            f"WHERE stock_code='{stock_code}'")
-        event.mysql.engine.execute(sql)
+            sql = (
+                f"UPDATE stock_manager set flag='q' "
+                f"WHERE stock_code='{stock_code}'")
+            event.engine.execute(sql)
 
 
 # event record interest
 def event_init_interest():
-    import numpy as np
     from venus.stock_interest import EventInterest
-    from mars.utils import ERROR
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('stock')
     event = EventInterest(GLOBAL_HEADER)
-    event.get_all_stock_list()
-    for stock_code in event.stock_list:
-        # stock code format: SH600000
-        try:
-            tab = event.resolve_interest_table(stock_code)
-            if not tab.empty:
-                tab.replace(['--'], np.nan, inplace=True)
-                tab = event.data_clean(tab)
-                event.batch_insert_interest_to_sql(tab)
-        except Exception as e:
-            ERROR(e)
-            ERROR(f"Error while initializing interest of {stock_code}")
+    event._load_template()
+    for stock_code in stock_list:
+        event.record_interest(stock_code)
+        delay(10)
 
 
-def event_record_interest():
-    """
-    Insert interest line by line.
-    """
-    pass
-
-
+# new frame
 def event_flag_stock():
     import re
-    from venus.stock_flag import EventStockFlag
-    event = EventStockFlag(GLOBAL_HEADER)
+    from venus.stock_classify import StockClassify
+    event = StockClassify(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
     for stock_code in stock_list:
         if re.match(r'^SH60|^SZ00|^SZ300|^SH688', stock_code):
-            event.flag_stock(stock_code)
+            event.flag_stock_type(stock_code, 't')
+        elif re.match(r'^SH900|^SZ200', stock_code):
+            event.flag_stock_type(stock_code, 'b')
+        elif re.match(r'^SH000|^SH950|^SZ399', stock_code):
+            event.flag_stock_type(stock_code, 'i')
+        elif re.match(r'^HK', stock_code):
+            event.flag_stock_type(stock_code, 'h')
 
 
+# to be delete
 def event_flag_b_stock():
     import re
     from venus.stock_flag import EventStockFlag
@@ -144,6 +128,7 @@ def event_flag_b_stock():
             event.flag_b_stock(stock_code)
 
 
+# to be delete
 def event_flag_index():
     import re
     from venus.stock_flag import EventStockFlag
@@ -154,6 +139,7 @@ def event_flag_index():
             event.flag_index(stock_code)
 
 
+# to be delete
 def event_flag_hk_stock():
     import re
     from venus.stock_flag import EventStockFlag
@@ -205,7 +191,9 @@ def event_download_finance_report():
         event.update_cashflow(stock)
 
 
+# new frame
 def event_update_shibor():
+    from venus.shibor import EventShibor
     event = EventShibor(GLOBAL_HEADER)
     year_list = range(2006, pandas.Timestamp.today().year + 1)
     for year in year_list:
@@ -261,4 +249,4 @@ def event_download_income_data():
 
 
 if __name__ == "__main__":
-    event_init_stock()
+    event_init_interest()

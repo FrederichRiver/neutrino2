@@ -1,4 +1,4 @@
-__version__ = '1.1.8'
+__version__ = '1.1.9'
 __all__ = ['env', 'obj', 'var']
 # v1.0.1: Released.
 # v1.0.2: Add Viewer account used for reading only.

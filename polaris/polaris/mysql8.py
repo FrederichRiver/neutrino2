@@ -6,7 +6,9 @@ Auther: Friederich River
 """
 import json
 import datetime
+from dev_global.env import TIME_FMT
 import pandas as pd
+import numpy as np
 from pandas import DataFrame
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -185,17 +187,6 @@ def create_table(table, engine):
     table.metadata.create_all(engine)
 
 
-class sqlExecutor(object):
-    def __init__(self, executor, sql):
-        self.executor = executor
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-
 class Json2Sql(mysqlBase):
     """
     Translate Json data into Sql (insert or update)\n
@@ -212,7 +203,9 @@ class Json2Sql(mysqlBase):
 
     def load_table(self, tablename):
         """
-        Load table infomation like column name and type.
+        Must be a dict to get the definition.\n
+        Load table infomation like column name and type.\n
+        Return : dict{ column_name: column_type in sql}
         """
         self.table_def = dict()
         self.tablename = tablename
@@ -230,8 +223,7 @@ class Json2Sql(mysqlBase):
         return self.table_def
 
     @staticmethod
-    def dataframe_to_json(df: pd.DataFrame, keys: list) -> list:
-        df.columns = keys
+    def dataframe_to_json(df: pd.DataFrame, keys=[]) -> list:
         jsonlist = []
         tmp = {}
         for index, row in df.iterrows():
@@ -257,7 +249,7 @@ class Json2Sql(mysqlBase):
         # combine into sql and returns.
         col = ','.join(col_section)
         val = ','.join(value_section)
-        sql = f"REPLACE into {self.tablename} ({col}) values ({val})"
+        sql = f"INSERT IGNORE into {self.tablename} ({col}) values ({val})"
         return(sql)
 
     def to_sql_update(self, json_data: json, keys: list):
@@ -277,15 +269,16 @@ class Json2Sql(mysqlBase):
 
     @staticmethod
     def trans_value(value):
-        from dev_global.env import TIME_FMT
         if isinstance(value, str):
-            return f"'{value}'"
+            result = value if value else 'NULL'
+            return f"'{result}'"
         elif isinstance(value, int):
             return f"{value}"
         elif isinstance(value, float):
             return f"{value}"
         elif isinstance(value, datetime.date):
-            return f"'{value.strftime(TIME_FMT)}'"
+            result = 'NULL' if pd.isna(value) else value.strftime(TIME_FMT)
+            return f"'{result}'"
         else:
             return 'NULL'
 
@@ -298,13 +291,20 @@ VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')
 if __name__ == '__main__':
     # h = mysqlHeader(1, '1', '1')
     import dev_global.var
+    from venus.stock_interest import EventInterest
+    from polaris.mysql8 import GLOBAL_HEADER
+    stock_code = 'SH600003'
+    # print(type(GLOBAL_HEADER))
+    # print(isinstance(GLOBAL_HEADER, mysqlHeader))
+    event = EventInterest(GLOBAL_HEADER)
     j2q = Json2Sql(GLOBAL_HEADER)
-    j2q.load_table('template_stock')
-    df = pd.read_csv('/home/friederich/Downloads/002456.csv', names=dev_global.var.stock_table_column, encoding='gb18030')
-    tmp = dev_global.var.stock_table_column
+    j2q.load_table('stock_interest')
+    df = event.resolve_interest_table(stock_code)
+    tmp = dev_global.var.stock_interest_column
     # tmp.remove('stock_code')
     # print(tmp)
-    data_list = j2q.dataframe_to_json(df, keys=tmp)
+    data_list = j2q.dataframe_to_json(df[:5], keys=tmp)
     for data in data_list:
+        # print(type(data["share_date"]))
         sql = j2q.to_sql_insert(data)
-        print(sql)
+        event.engine.execute(sql)
