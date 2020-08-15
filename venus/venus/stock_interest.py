@@ -5,6 +5,7 @@ import pandas as pd
 from pandas import DataFrame
 from dev_global.var import stock_interest_column
 from dev_global.env import CONF_FILE
+from polaris.mysql8 import mysqlHeader
 from venus.stock_base2 import StockBase
 
 
@@ -16,7 +17,7 @@ class EventInterest(StockBase):
     """
     def __init__(self, header):
         super(EventInterest, self).__init__(header)
-        self.df = pd.DataFrame()
+        self.df = DataFrame()
 
     def _load_template(self):
         """
@@ -53,7 +54,7 @@ class EventInterest(StockBase):
             # change column type according to their pre_fix.
             result = self.dataframe_data_translate(df)
         else:
-            result = pd.DataFrame()
+            result = DataFrame()
         return result
 
     @log_decorator2
@@ -66,13 +67,28 @@ class EventInterest(StockBase):
             self.engine.execute(sql)
 
 
+class EventStockData(StockBase):
+    def __init__(self, header: mysqlHeader) -> None:
+        super(EventStockData, self).__init__(header)
+
+    def set_ipo_date(self, stock_code):
+        """
+        Fetch the first date of stock and set it as ipo date.
+        """
+        query = self.select_values(stock_code, 'trade_date')
+        ipo_date = pd.to_datetime(query[0])
+        # ipo_date = datetime.date(1990,12,19)
+        self.update_value(
+            'stock_manager', 'ipo_date',
+            f"'{ipo_date[0]}'", f"stock_code='{stock_code}'")
+        return ipo_date[0]
+
+    def get_ipo_date(self, stock_code):
+        query = self.select_values(stock_code, 'trade_date')
+        ipo_date = pd.to_datetime(query[0])
+        return ipo_date[0]
+
+
 if __name__ == "__main__":
-    x = np.nan
-    # dataframe_nan(x)
-    # """
     from polaris.mysql8 import GLOBAL_HEADER
-    event = EventInterest(GLOBAL_HEADER)
-    event._load_template()
-    event.record_interest('SH600003')
-    # event.resolve_interest_table('SH600000')
-    # """
+    event = EventStockData(GLOBAL_HEADER)

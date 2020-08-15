@@ -2,8 +2,8 @@
 from venus.company import EventCompany
 from mars.network import delay
 from venus.finance_report import EventFinanceReport
-import pandas
-from venus.cninfo import cninfoSpider
+# import pandas
+# from venus.cninfo import cninfoSpider
 from mars.utils import ERROR
 from polaris.mysql8 import GLOBAL_HEADER
 
@@ -19,15 +19,15 @@ __all__ = [
     'event_flag_quit_stock',
     'event_flag_stock',
     'event_finance_info',
-    'event_get_hk_list',
+    # 'event_get_hk_list',
     'event_init_interest',
     'event_init_stock',
     'event_rehabilitation',
     'event_record_company_infomation',
     'event_record_company_stock_structure',
     'event_record_new_stock',
-    'event_record_orgid',
-    'event_update_shibor',
+    # 'event_record_orgid',
+    # 'event_update_shibor',
     ]
 
 # Event Trade Data Manager
@@ -57,6 +57,7 @@ def event_record_new_stock():
         event.record_stock(stock_code)
 
 
+# new frame
 def event_download_stock_data():
     from venus.stock_manager import EventTradeDataManager
     event = EventTradeDataManager(GLOBAL_HEADER)
@@ -65,6 +66,7 @@ def event_download_stock_data():
         event.download_stock_data(stock_code)
 
 
+# new frame
 def event_download_index_data():
     from venus.stock_manager import EventTradeDataManager
     event = EventTradeDataManager(GLOBAL_HEADER)
@@ -192,6 +194,7 @@ def event_download_finance_report():
 
 
 # new frame
+"""
 def event_update_shibor():
     from venus.shibor import EventShibor
     event = EventShibor(GLOBAL_HEADER)
@@ -200,8 +203,10 @@ def event_update_shibor():
         url = event.get_shibor_url(year)
         df = event.get_excel_object(url)
         event.get_shibor_data(df)
+"""
 
 
+"""
 def event_get_hk_list():
     event = cninfoSpider(GLOBAL_HEADER)
     df = event.get_hk_stock_list()
@@ -214,6 +219,7 @@ def event_record_orgid():
     event._update_stock_manager(df)
     df = event.get_hk_stock_list()
     event._update_stock_manager(df)
+"""
 
 
 def event_download_balance_data():

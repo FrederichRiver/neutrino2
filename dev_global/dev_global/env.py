@@ -33,3 +33,5 @@ HEAD_FILE = SOFT_PATH + 'config/header.json'
 COOKIE_FILE = SOFT_PATH + 'config/cookie.json'
 SQL_FILE = SOFT_PATH + 'config/sql.json'
 MANUAL = SOFT_PATH + 'config/Neutrino'
+
+DOWNLOAD_PATH = '/home/fred/stock_data'

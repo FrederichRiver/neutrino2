@@ -1,7 +1,8 @@
 #!/usr/bin/python38
+from venus.stock_base2 import StockBase
 from flask import Flask
 from flask import jsonify
-from venus.stock_base2 import StockCodeList
+
 
 # Usage: import app, and app.run()
 app = Flask('Proton')
@@ -15,9 +16,9 @@ def test():
 
 @app.route('/totalstocklist')
 def api_get_total_stock_list():
-    # from polaris.mysql8 import GLOBAL_HEADER
-    event = StockCodeList()
-    stock_list = event.get_stock()
+    from polaris.mysql8 import GLOBAL_HEADER
+    event = StockBase(GLOBAL_HEADER)
+    stock_list = event.get_all_security_list()
     return jsonify(stock_list)
 
 

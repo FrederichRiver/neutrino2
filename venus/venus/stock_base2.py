@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 from pandas import DataFrame
 import re
+import json
 import numpy as np
 import requests
 # import lxml
@@ -11,6 +12,7 @@ from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader, Json2Sql)
 from requests.models import HTTPError
 from venus.form import formStockManager
+from venus.cninfo import spiderBase
 from mars.utils import read_json
 
 
@@ -22,8 +24,8 @@ class StockBase(mysqlBase):
     param  header: mysqlHeader
     """
     def __init__(self, header: mysqlHeader) -> None:
-        if not isinstance(header, mysqlHeader):
-            raise HeaderException("Error due to incorrect header.")
+        # if not isinstance(header, mysqlHeader):
+        #    raise HeaderException("Error due to incorrect header.")
         super(StockBase, self).__init__(header)
         # date format: YYYY-mm-dd
         self._Today = datetime.date.today().strftime(TIME_FMT)
@@ -211,6 +213,70 @@ class StockCodeList(object):
         pass
 
 
+class StockList(spiderBase, StockBase):
+    """
+    A method base on class StockCodeList.
+    """
+    def __init__(self, header: mysqlHeader) -> None:
+        spiderBase.__init__(self)
+        StockBase.__init__(self, header)
+        self.j2sql = Json2Sql(header)
+        self.j2sql.load_table('stock_manager')
+
+    def get_stock_list(self):
+        url = 'http://www.cninfo.com.cn/new/data/szse_stock.json'
+        result = requests.get(url, self.http_header)
+        jr = json.loads(result.text)
+        df = pd.DataFrame(jr['stockList'])
+        df.drop(['category'], axis=1, inplace=True)
+        df.columns = ['orgId', 'stock_code', 'short_code', 'stock_name']
+        for index, row in df.iterrows():
+            if re.match(r'^0|^3|^2', row['stock_code']):
+                row['stock_code'] = 'SZ' + row['stock_code']
+            elif re.match(r'^6|^9', row['stock_code']):
+                row['stock_code'] = 'SH' + row['stock_code']
+        return df
+
+    def get_hk_stock_list(self):
+        url = 'http://www.cninfo.com.cn/new/data/hke_stock.json'
+        result = requests.get(url, self.http_header)
+        jr = json.loads(result.text)
+        df = pd.DataFrame(jr['stockList'])
+        df.drop(['category'], axis=1, inplace=True)
+        for index, row in df.iterrows():
+            row['code'] = 'HK' + row['code']
+        return df
+
+    def get_fund_stock_list(self):
+        url = 'http://www.cninfo.com.cn/new/data/fund_stock.json'
+        result = requests.get(url, self.http_header)
+        jr = json.loads(result.text)
+        df = pd.DataFrame(jr['stockList'])
+        df.drop(['category'], axis=1, inplace=True)
+        for index, row in df.iterrows():
+            row['code'] = 'F' + row['code']
+        return df
+
+    def get_bond_stock_list(self):
+        url = 'http://www.cninfo.com.cn/new/data/bond_stock.json'
+        result = requests.get(url, self.http_header)
+        jr = json.loads(result.text)
+        df = pd.DataFrame(jr['stockList'])
+        df.drop(['category'], axis=1, inplace=True)
+        for index, row in df.iterrows():
+            row['code'] = 'R' + row['code']
+        return df
+
+    def insert_stock_manager(self, df: DataFrame):
+        """
+        API function
+        """
+        json_data = self.j2sql.dataframe_to_json(df, ['orgId', 'stock_code', 'short_code', 'stock_name'])
+        for data in json_data:
+            sql = self.j2sql.to_sql_insert(data)
+            self.engine.execute(sql)
+
+
 # On Client
 def resolve_stock_list(stock_type='STOCK'):
     """
@@ -239,10 +305,6 @@ def resolve_stock_list(stock_type='STOCK'):
 
 if __name__ == "__main__":
     from polaris.mysql8 import GLOBAL_HEADER
-    event = StockBase(GLOBAL_HEADER)
-    # result = event.get_all_stock_list()
-    df = pd.DataFrame([1, 2, 3, 4])
-    df.columns = ['test']
-    df['date'] = np.nan
-    df = event.dataframe_data_translate(df)
-    print(df)
+    event = StockList(GLOBAL_HEADER)
+    result = event.get_stock_list()
+    event.insert_stock_manager(result)

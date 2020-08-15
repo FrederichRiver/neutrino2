@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 import pandas as pd
+from pandas import DataFrame
 import numpy as np
 from datetime import timedelta
 import dev_global.var
-from dev_global.env import CONF_FILE
+from dev_global.env import CONF_FILE, DOWNLOAD_PATH
 # from dev_global.var import stock_table_column
 from mars.utils import read_url, drop_space
 from venus.stock_base2 import StockBase
 from venus.form import formStockManager
-from mars.log_manager import log_decorator, log_decorator2
+from mars.log_manager import log_decorator2
 
 
 class EventTradeDataManager(StockBase):
@@ -42,12 +43,13 @@ class EventTradeDataManager(StockBase):
         netease_url = self.url.format(query_code, start_date, end_date)
         return netease_url
 
-    def get_trade_data(self, stock_code, end_date, start_date='19901219') -> pd.DataFrame:
+    def get_trade_data(self, stock_code, end_date, start_date='19901219') -> DataFrame:
         """
         read csv data and return dataframe type data.
         """
         # config file is a url file.
         url = self.url_netease(stock_code, start_date, end_date)
+        df = DataFrame()
         df = pd.read_csv(url, names=dev_global.var.stock_table_column, encoding='gb18030')
         return df
 
@@ -62,18 +64,6 @@ class EventTradeDataManager(StockBase):
             stock_name = None
         return stock_code, stock_name
 
-    @log_decorator
-    def record_stock(self, stock_code):
-        """
-        Record table <stock_code> into database.
-        """
-        result = self.check_stock(stock_code)
-        # if table exists, result = (stock_code,)
-        # else result = (,)
-        if not result:
-            self.create_stock_table(stock_code)
-            self.init_stock_data(stock_code)
-
     def check_stock(self, stock_code):
         """
         Check whether table <stock_code> exists.
@@ -82,6 +72,7 @@ class EventTradeDataManager(StockBase):
         result = self.session.query(formStockManager.stock_code).filter_by(stock_code=stock_code).first()
         return result
 
+    @log_decorator2
     def create_stock_table(self, stock_code):
         if self.create_table_from_table(stock_code, 'template_stock'):
             stock = formStockManager(stock_code=stock_code, create_date=self.Today)
@@ -101,26 +92,25 @@ class EventTradeDataManager(StockBase):
         df = df.dropna(axis=0, how='any')
         return df
 
+    @log_decorator2
     def init_stock_data(self, stock_code):
         """
         used when first time download stock data.
         """
         df = self.get_trade_data(stock_code, self.today)
         df = self._clean(df)
-        df.to_sql(
-            name=stock_code,
-            con=self.engine,
-            if_exists='append',
-            index=False)
-        query = self.session.query(
+        if not df.empty:
+            df.to_sql(name=stock_code, con=self.engine, if_exists='replace', index=False)
+            query = self.session.query(
                 formStockManager.stock_code,
                 formStockManager.update_date
-            ).filter_by(stock_code=stock_code).first()
-        if query:
-            query.update({"update_date": self.Today})
-        self.session.commit()
+            ).filter_by(stock_code=stock_code)
+            if query:
+                query.update(
+                        {"update_date": self.Today})
+            self.session.commit()
 
-    # @log_decorator2
+    @log_decorator2
     def download_stock_data(self, stock_code):
         # fetch last update date.
         update = self.session.query(formStockManager.update_date).filter_by(stock_code=stock_code).first()
@@ -141,11 +131,44 @@ class EventTradeDataManager(StockBase):
             sql = self.j2sql.to_sql_insert(data)
             self.engine.execute(sql)
 
+    def get_trade_detail_data(self, stock_code, trade_date):
+        # trade_date format: '20191118'
+        # DOWNLOAD_PATH = '/home/friederich/Downloads/stock_data/'
+        code = self.net_ease_code(stock_code)
+        url = read_url("URL_tick_data", CONF_FILE).format(
+            trade_date[:4], trade_date, code)
+        df = pd.read_excel(url)
+        filename = absolute_path(DOWNLOAD_PATH, f"{stock_code}_{trade_date}.csv")
+        if not df.empty:
+            df.to_csv(filename, encoding='gb18030')
+
+    def set_ipo_date(self, stock_code):
+        query = self.select_values(stock_code, 'trade_date')
+        ipo_date = pd.to_datetime(query[0])
+        # ipo_date = datetime.date(1990,12,19)
+        self.update_value(
+            'stock_manager', 'ipo_date',
+            f"'{ipo_date[0]}'", f"stock_code='{stock_code}'")
+        return ipo_date[0]
+
+    def get_ipo_date(self, stock_code):
+        query = self.select_values(stock_code, 'trade_date')
+        ipo_date = pd.to_datetime(query[0])
+        return ipo_date[0]
+
+
+def absolute_path(file_path: str, file_name: str) -> str:
+    """
+    Connect path with file, return a absolute path.
+    """
+    if (file_path[-1] == '/') and (file_name[0] == '/'):
+        result_path = file_path + file_name[1:]
+    elif (file_path[-1] != '/') and (file_name[0] != '/'):
+        result_path = file_path + '/' + file_name
+    else:
+        result_path = file_path + file_name
+    return result_path
+
 
 if __name__ == "__main__":
-    from polaris.mysql8 import GLOBAL_HEADER
-    event = EventTradeDataManager(GLOBAL_HEADER)
-    stock_code = 'SH600000'
-    event.download_stock_data(stock_code)
-    # result = event.check_stock(stock_code)
-    # print(result)
+    pass

@@ -57,8 +57,7 @@ def log_decorator(func):
             result = func(*args, **kv)
         except Exception as e:
             neulog.addHandler(Time_Handler)
-            neulog.error(f"<Module> {func.__name__}")
-            neulog.error(f"<Message> {e}")
+            neulog.error(f"<Module> {func.__name__} <Message> {e}")
             neulog.handlers.pop()
             result = None
         return result
@@ -75,8 +74,7 @@ def log_decorator2(func):
             func(*args, **kv)
         except Exception as e:
             neulog.addHandler(Time_Handler)
-            neulog.error(f"<Module> {func.__name__}")
-            neulog.error(f"<Message> {e}")
+            neulog.error(f"<Module> {func.__name__} <Message> {e}")
             neulog.handlers.pop()
         return func
     return wrapper

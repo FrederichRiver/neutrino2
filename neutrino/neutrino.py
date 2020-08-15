@@ -10,7 +10,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from mars.task_manager import taskManager2
 from threading import Thread
-from mars.log_manager import infoLog, errorLog
+from mars.log_manager import infoLog, errorLog, log_decorator2
 
 
 __version__ = '1.7.15'

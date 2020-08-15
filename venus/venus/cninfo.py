@@ -1,11 +1,5 @@
 #!/usr/bin/python3
-import requests
 from mars.network import userAgent, cookie
-from polaris.mysql8 import mysqlBase
-from mars.utils import ERROR
-import json
-import pandas
-import re
 
 
 class spiderBase(object):
@@ -14,11 +8,11 @@ class spiderBase(object):
     http_user_agent.random_agent(): get a random User_Agent.
     http_cookie.get_cookie(cookie_name): return a cookie by name 'cookie_name'.
     """
-    def __init__(self, mysql_header):
-        self.mysql = mysqlBase(mysql_header)
+    def __init__(self):
+        # self.mysql = mysqlBase(mysql_header)
         self.http_user_agent = userAgent()
         self.http_cookie = cookie()
-        self.request = requests
+        # self.request = requests
         self.http_header = {
             "Accept": 'application/json, text/javascript, */*; q=0.01',
             "Accept-Encoding": 'gzip, deflate',
@@ -34,85 +28,6 @@ class spiderBase(object):
             "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
             "X-Requested-With": 'XMLHttpRequest',
             }
-
-    def test(self):
-        print(self.http_user_agent())
-        print(self.http_cookie.get_cookie('cninfo'))
-        resp = self.request.get('http://www.163.com')
-        print(resp)
-
-
-class cninfoSpider(spiderBase):
-    def get_stock_list(self):  
-        url = 'http://www.cninfo.com.cn/new/data/szse_stock.json'
-        result = self.request.get(url, self.http_header)
-        jr = json.loads(result.text)
-        df = pandas.DataFrame(jr['stockList'])
-        df.drop(['category'], axis=1, inplace=True)
-        for index, row in df.iterrows():
-            if re.match(r'^0|^3|^2', row['code']):
-                row['code'] = 'SZ' + row['code']
-            elif re.match(r'^6|^9', row['code']):
-                row['code'] = 'SH' + row['code']
-        return df
-
-    def get_hk_stock_list(self):
-        url = 'http://www.cninfo.com.cn/new/data/hke_stock.json'
-        result = self.request.get(url, self.http_header)
-        jr = json.loads(result.text)
-        df = pandas.DataFrame(jr['stockList'])
-        df.drop(['category'], axis=1, inplace=True)
-        for index, row in df.iterrows():
-            row['code'] = 'HK' + row['code']
-        return df
-
-    def get_fund_stock_list(self):
-        url = 'http://www.cninfo.com.cn/new/data/fund_stock.json'
-        result = self.request.get(url, self.http_header)
-        jr = json.loads(result.text)
-        df = pandas.DataFrame(jr['stockList'])
-        df.drop(['category'], axis=1, inplace=True)
-        for index, row in df.iterrows():
-            row['code'] = 'F' + row['code']
-        return df
-
-    def get_bond_stock_list(self):
-        url = 'http://www.cninfo.com.cn/new/data/bond_stock.json'
-        result = self.request.get(url, self.http_header)
-        jr = json.loads(result.text)
-        df = pandas.DataFrame(jr['stockList'])
-        df.drop(['category'], axis=1, inplace=True)
-        for index, row in df.iterrows():
-            row['code'] = 'R' + row['code']
-        return df
-
-    def _insert_stock_manager(self, df):
-        for index, row in df.iterrows():
-            try:
-                insert_sql = (
-                    "INSERT IGNORE into stock_manager ("
-                    "stock_code, orgId, short_code,stock_name) "
-                    f"VALUES ("
-                    f"'{row['code']}','{row['orgId']}',"
-                    f"'{row['pinyin']}','{row['zwjc']}' )"
-                    )
-                self.mysql.engine.execute(insert_sql)
-            except Exception as e:
-                ERROR(e)
-
-    def _update_stock_manager(self, df):        
-        for index, row in df.iterrows():
-            try:
-                update_sql = (
-                    "UPDATE stock_manager set "
-                    f"orgId='{row['orgId']}',"
-                    f"short_code='{row['pinyin']}',"
-                    f"stock_name='{row['zwjc']}' "
-                    f"WHERE stock_code='{row['code']}'"
-                    )
-                self.mysql.engine.execute(update_sql)
-            except Exception as e:
-                ERROR(e)
 
 
 if __name__ == "__main__":

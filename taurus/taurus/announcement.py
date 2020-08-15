@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from venus.cninfo import cninfoSpider
-from polaris.mysql8 import mysqlBase
-from dev_global.env import GLOBAL_HEADER, TIME_FMT
+from venus.cninfo import spiderBase
+from venus.stock_base2 import StockBase
+from polaris.mysql8 import mysqlBase, GLOBAL_HEADER, mysqlHeader
+from dev_global.env import TIME_FMT
 import requests
 import datetime
 import time
@@ -11,7 +12,11 @@ import random
 __all__ = ['event_record_announce_url', ]
 
 
-class cninfoAnnounce(cninfoSpider):
+class cninfoAnnounce(StockBase, spiderBase):
+    def __init__(self, header: mysqlHeader) -> None:
+        spiderBase.__init__(self)
+        StockBase.__init__(self, header)
+
     def _set_param(self):
         self.path = 'root'
         self.index = mysqlBase(GLOBAL_HEADER)
@@ -102,7 +107,7 @@ class cninfoAnnounce(cninfoSpider):
                 f"%s,{ann['announcementTime']/1000},"
                 f"'{ann['adjunctUrl']}','{ann['announcementType']}')"
             )
-            self.mysql.engine.execute(sql, title)
+            self.engine.execute(sql, title)
         return json_content_list["hasMore"]
 
     def get_pdf_url(self, ann_id):

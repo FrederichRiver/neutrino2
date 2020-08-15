@@ -15,6 +15,8 @@ from sqlalchemy.orm import sessionmaker
 
 __version__ = '4.4.20'
 
+__all__ = ['mysqlBase', 'mysqlHeader', 'GLOBAL_HEADER']
+
 
 class mysqlBase(object):
     def __init__(self, header):
@@ -223,6 +225,9 @@ class Json2Sql(mysqlBase):
 
     @staticmethod
     def dataframe_to_json(df: pd.DataFrame, keys=[]) -> list:
+        """
+        Key is the definition of insert table.
+        """
         jsonlist = []
         tmp = {}
         for index, row in df.iterrows():
