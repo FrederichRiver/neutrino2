@@ -28,6 +28,10 @@ class spider(object):
         return True
 
 
+class UrlFormatError(BaseException):
+    pass
+
+
 class formArticle(article_base):
     __tablename__ = 'article'
     idx = Column(Integer)

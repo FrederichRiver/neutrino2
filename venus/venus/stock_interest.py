@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python38
 from mars.log_manager import log_decorator2
 import numpy as np
 import pandas as pd
@@ -78,9 +78,7 @@ class EventStockData(StockBase):
         query = self.select_values(stock_code, 'trade_date')
         ipo_date = pd.to_datetime(query[0])
         # ipo_date = datetime.date(1990,12,19)
-        self.update_value(
-            'stock_manager', 'ipo_date',
-            f"'{ipo_date[0]}'", f"stock_code='{stock_code}'")
+        self.update_value('stock_manager', 'ipo_date', f"'{ipo_date[0]}'", f"stock_code='{stock_code}'")
         return ipo_date[0]
 
     def get_ipo_date(self, stock_code):
@@ -88,7 +86,52 @@ class EventStockData(StockBase):
         ipo_date = pd.to_datetime(query[0])
         return ipo_date[0]
 
+    def adjust_factor(self, stock_code: str):
+        # fetch close price data.
+        df_stock = self.select_values(stock_code, 'trade_date,close_price,prev_close_price')
+        df_interest = self.condition_select('stock_interest', 'float_bonus,float_increase,float_dividend,xrdr_date', f"char_stock_code='{stock_code}'")
+        df_stock.columns = ['trade_date', 'close_price', 'prev_close_price']
+        df_stock.set_index('trade_date', inplace=True)
+        # fetch bonus data.
+        df_interest.columns = ['bonus', 'increase', 'dividend', 'trade_date']
+        df_interest.set_index('trade_date', inplace=True)
+        df = pd.concat([df_stock, df_interest], axis=1)
+        df['bonus'] = df['bonus'].apply(lambda x: 0 if pd.isna(x) else x)
+        df['increase'] = df['increase'].apply(lambda x: 0 if pd.isna(x) else x)
+        df['dividend'] = df['dividend'].apply(lambda x: 0 if pd.isna(x) else x)
+        # factor calculation
+        df['prev'] = df['close_price'].shift(1)
+        df['factor'] = 1.0
+        for index, row in df.iterrows():
+            if (row['dividend'] + row['increase'] + row['bonus']) > 0:
+                df.loc[index, 'prev_close_price'] = adjust_factor(row['prev'], row['dividend'], row['increase'], row['bonus'])
+                df.loc[index, 'factor'] = row['prev'] / df.loc[index, 'prev_close_price']
+        df['adjust_factor'] = 1.0
+        cum_factor = 1.0
+        for index, row in df.iterrows():
+            cum_factor *= row['factor']
+            df.loc[index, 'adjust_factor'] = cum_factor
+        df['adjust_price'] = df['close_price'] * df['adjust_factor']
+        result = DataFrame(df, columns=['adjust_factor'], index=df.index)
+        result['trade_date'] = df.index
+        return result
+
+    @log_decorator2
+    def record_factor(self, stock_code, df):
+        self.j2sql.load_table(stock_code)
+        tmp_df = self.j2sql.dataframe_to_json(df, keys=['adjust_factor', 'trade_date'])
+        for data in tmp_df:
+            sql = self.j2sql.to_sql_update(data, keys=['trade_date'])
+            self.engine.execute(sql)
+
+
+def adjust_factor(x, div, b, i):
+    result = (x - div/10) / (1 + b/10 + i/10)
+    return result
+
 
 if __name__ == "__main__":
     from polaris.mysql8 import GLOBAL_HEADER
     event = EventStockData(GLOBAL_HEADER)
+    df = event.adjust_factor('SH600000')
+    event.record_factor('SH600000', df)

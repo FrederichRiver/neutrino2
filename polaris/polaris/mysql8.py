@@ -8,7 +8,7 @@ import json
 import datetime
 from dev_global.env import TIME_FMT
 import pandas as pd
-from pandas import DataFrame
+from pandas import Series
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -46,18 +46,17 @@ class mysqlBase(object):
     def __str__(self):
         return self.id_string
 
-    def insert(self, sql):
-        self.engine.execute(sql)
-        return 1
-
-    def insert2(self, table: str, value: dict):
+    def insert(self, table: str, value: dict):
+        """
+        This method is use only when the value is surely confirmed.
+        """
         if isinstance(value, dict):
             sql = f"INSERT IGNORE INTO {table} "
             for key in value.keys():
                 sql += f"{key}={value[key]} "
             self.engine.execute(sql)
 
-    def show_column(self, table: str) -> DataFrame:
+    def show_column(self, table: str) -> Series:
         """
         Return a DataFrame like df['col', 'col_type']
         """
@@ -292,26 +291,8 @@ class Json2Sql(mysqlBase):
 GLOBAL_HEADER = mysqlHeader('stock', 'stock2020', 'stock')
 TEST_HEADER = mysqlHeader('stock', 'stock2020', 'test')
 VIEWER_HEADER = mysqlHeader('view', 'view2020', 'stock')
+NLP_HEADER = mysqlHeader('stock', 'stock2020', 'natural_language')
 
 
 if __name__ == '__main__':
-    # h = mysqlHeader(1, '1', '1')
-    import dev_global.var
-    from venus.stock_interest import EventInterest
-    from polaris.mysql8 import GLOBAL_HEADER
-    stock_code = 'SH600003'
-    # print(type(GLOBAL_HEADER))
-    # print(isinstance(GLOBAL_HEADER, mysqlHeader))
-    event = EventInterest(GLOBAL_HEADER)
-    j2q = Json2Sql(GLOBAL_HEADER)
-    j2q.load_table('stock_interest')
-    df = event.resolve_interest_table(stock_code)
-    tmp = dev_global.var.stock_interest_column
-    # tmp.remove('stock_code')
-    # print(tmp)
-    data_list = j2q.dataframe_to_json(df[:5], keys=tmp)
-    for data in data_list:
-        # print(type(data["share_date"]))
-        sql = j2q.to_sql_insert(data)
-        print(sql)
-        event.engine.execute(sql)
+    pass

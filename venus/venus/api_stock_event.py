@@ -19,15 +19,11 @@ __all__ = [
     'event_flag_quit_stock',
     'event_flag_stock',
     'event_finance_info',
-    # 'event_get_hk_list',
     'event_init_interest',
     'event_init_stock',
-    'event_rehabilitation',
     'event_record_company_infomation',
     'event_record_company_stock_structure',
     'event_record_new_stock',
-    # 'event_record_orgid',
-    # 'event_update_shibor',
     ]
 
 # Event Trade Data Manager
@@ -43,8 +39,34 @@ def event_init_stock():
     stock_list = resolve_stock_list('totalstocklist')
     event = EventTradeDataManager(GLOBAL_HEADER)
     for stock_code in stock_list:
-        event.record_stock(stock_code)
+        event.init_stock_data(stock_code)
         delay(5)
+
+
+def event_create_stock_table():
+    """
+    Init database from a blank stock list.
+    """
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('totalstocklist')
+    event = EventTradeDataManager(GLOBAL_HEADER)
+    for stock_code in stock_list:
+        event.create_stock_table(stock_code)
+
+
+def event_init_index():
+    from venus.stock_base2 import StockList
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.form import formStockManager
+    EventStocklist = StockList(GLOBAL_HEADER)
+    stock_list = EventStocklist._get_index()
+    event = EventTradeDataManager(GLOBAL_HEADER)
+    for stock_code in stock_list:
+        if event.stock_exist(stock_code, event.today):
+            record = formStockManager(stock_code=stock_code)
+            event.session.add(record)
+            event.session.commit()
 
 
 # new frame
@@ -54,7 +76,7 @@ def event_record_new_stock():
     event = EventTradeDataManager(GLOBAL_HEADER)
     stock_list = resolve_stock_list('STOCK')
     for stock_code in stock_list:
-        event.record_stock(stock_code)
+        event.init_stock_data(stock_code)
 
 
 # new frame
@@ -102,6 +124,16 @@ def event_init_interest():
         delay(10)
 
 
+def event_adjust_factor():
+    from venus.stock_interest import EventStockData
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('stock')
+    event = EventStockData(GLOBAL_HEADER)
+    for stock_code in stock_list:
+        df = event.adjust_factor(stock_code)
+        event.record_factor(stock_code, df)
+
+
 # new frame
 def event_flag_stock():
     import re
@@ -117,43 +149,6 @@ def event_flag_stock():
             event.flag_stock_type(stock_code, 'i')
         elif re.match(r'^HK', stock_code):
             event.flag_stock_type(stock_code, 'h')
-
-
-# to be delete
-def event_flag_b_stock():
-    import re
-    from venus.stock_flag import EventStockFlag
-    event = EventStockFlag(GLOBAL_HEADER)
-    stock_list = event.get_all_security_list()
-    for stock_code in stock_list:
-        if re.match(r'^SH900|^SZ200', stock_code):
-            event.flag_b_stock(stock_code)
-
-
-# to be delete
-def event_flag_index():
-    import re
-    from venus.stock_flag import EventStockFlag
-    event = EventStockFlag(GLOBAL_HEADER)
-    stock_list = event.get_all_security_list()
-    for stock_code in stock_list:
-        if re.match(r'^SH000|^SH950|^SZ399', stock_code):
-            event.flag_index(stock_code)
-
-
-# to be delete
-def event_flag_hk_stock():
-    import re
-    from venus.stock_flag import EventStockFlag
-    event = EventStockFlag(GLOBAL_HEADER)
-    stock_list = event.get_all_security_list()
-    for stock_code in stock_list:
-        if re.match(r'^HK', stock_code):
-            event.flag_hk_stock(stock_code)
-
-
-def event_rehabilitation():
-    pass
 
 
 def event_record_company_infomation():
@@ -255,4 +250,4 @@ def event_download_income_data():
 
 
 if __name__ == "__main__":
-    event_init_interest()
+    event_init_index()

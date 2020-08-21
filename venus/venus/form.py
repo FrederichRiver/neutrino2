@@ -101,7 +101,7 @@ class formStock(formTemplate):
     prev_close_price = Column(Float, default=0)
     change_rate = Column(Float, default=0)
     amplitude = Column(Float, default=0)
-    volume = Column(Integer, default=0)
+    volumn = Column(Integer, default=0)
     turnover = Column(Float, default=0)
     adjust_factor = Column(Float, default=1)
 

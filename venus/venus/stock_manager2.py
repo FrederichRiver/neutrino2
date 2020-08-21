@@ -7,6 +7,7 @@ import dev_global.var
 from dev_global.env import CONF_FILE, DOWNLOAD_PATH
 # from dev_global.var import stock_table_column
 from mars.utils import read_url, drop_space
+import requests
 from venus.stock_base2 import StockBase
 from venus.form import formStockManager
 from mars.log_manager import log_decorator2
@@ -64,6 +65,17 @@ class EventTradeDataManager(StockBase):
             stock_name = None
         return stock_code, stock_name
 
+    def stock_exist(self, stock_code, end_date, start_date='19901219'):
+        url = self.url_netease(stock_code, start_date, end_date)
+        try:
+            resp = requests.get(url)
+            if resp.status_code == 200:
+                return True
+            else:
+                return False
+        except:
+            return False
+
     def check_stock(self, stock_code):
         """
         Check whether table <stock_code> exists.
@@ -100,7 +112,7 @@ class EventTradeDataManager(StockBase):
         df = self.get_trade_data(stock_code, self.today)
         df = self._clean(df)
         if not df.empty:
-            df.to_sql(name=stock_code, con=self.engine, if_exists='replace', index=False)
+            df.to_sql(name=stock_code, con=self.engine, if_exists='append', index=False)
             query = self.session.query(
                 formStockManager.stock_code,
                 formStockManager.update_date

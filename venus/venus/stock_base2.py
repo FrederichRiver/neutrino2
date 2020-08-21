@@ -276,6 +276,69 @@ class StockList(spiderBase, StockBase):
             sql = self.j2sql.to_sql_insert(data)
             self.engine.execute(sql)
 
+    @staticmethod
+    def _get_sh_stock():
+        stock_list = [f"SH60{str(i).zfill(4)}" for i in range(4000)]
+        return stock_list
+
+    @staticmethod
+    def _get_sz_stock():
+        stock_list = [f"SZ{str(i).zfill(6)}" for i in range(1, 1000)]
+        return stock_list
+
+    @staticmethod
+    def _get_cyb_stock():
+        stock_list = [f"SZ300{str(i).zfill(3)}" for i in range(1, 1000)]
+        return stock_list
+
+    @staticmethod
+    def _get_zxb_stock():
+        stock_list = [f"SZ002{str(i).zfill(3)}" for i in range(1, 1000)]
+        return stock_list
+
+    @staticmethod
+    def _get_b_stock():
+        s1 = [f"SH900{str(i).zfill(3)}" for i in range(1, 1000)]
+        s2 = [f"SZ200{str(i).zfill(3)}" for i in range(1, 1000)]
+        stock_list = s1 + s2
+        return stock_list
+
+    @staticmethod
+    def _get_index():
+        index1 = [f"SH000{str(i).zfill(3)}" for i in range(1000)]
+        index2 = [f"SH950{str(i).zfill(3)}" for i in range(1000)]
+        index3 = [f"SZ399{str(i).zfill(3)}" for i in range(1000)]
+        stock_list = index1 + index2 + index3
+        return stock_list
+
+    @staticmethod
+    def _get_kcb_stock():
+        stock_list = [f"SH688{str(i).zfill(3)}" for i in range(1000)]
+        return stock_list
+
+    @staticmethod
+    def _get_xsb_stock():
+        stock_list = [f"SH83{str(i).zfill(3)}" for i in range(1000)]
+        return stock_list
+
+    @staticmethod
+    def get_stock():
+        """
+        @API function
+        """
+        stock_list = StockCodeList._get_sh_stock()
+        stock_list += StockCodeList._get_sz_stock()
+        stock_list += StockCodeList._get_cyb_stock()
+        stock_list += StockCodeList._get_zxb_stock()
+        stock_list += StockCodeList._get_kcb_stock()
+        stock_list += StockCodeList._get_b_stock()
+        stock_list += StockCodeList._get_index()
+        return stock_list
+
+    @staticmethod
+    def _get_fund():
+        pass
+
 
 # On Client
 def resolve_stock_list(stock_type='STOCK'):
