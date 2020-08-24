@@ -317,8 +317,36 @@ class neteaseNewsSpider(newsSpiderBase):
 
 
 class SinaNewsSpider(newsSpiderBase):
-    def url_list(self):
-        pass
+    def generate_url_list(self):
+        """
+        https://finance.sina.com.cn/stock/
+        http://finance.sina.com.cn/stock/newstock/
+        http://finance.sina.com.cn/stock/hkstock/
+        https://finance.sina.com.cn/stock/usstock/
+        http://finance.sina.com.cn/stock/kechuangban/
+        https://finance.sina.com.cn/fund/
+        https://finance.sina.com.cn/futuremarket/
+        https://finance.sina.com.cn/forex/
+        https://finance.sina.com.cn/nmetal/
+        http://finance.sina.com.cn/bond/
+        http://finance.sina.com.cn/money/
+        http://finance.sina.com.cn/money/bank/
+        http://finance.sina.com.cn/money/insurance/
+        http://finance.sina.com.cn/trust/
+        http://finance.sina.cn/esg/
+        http://finance.sina.com.cn/meeting/
+        http://finance.sina.com.cn/zt_d/20200727dp/
+        https://finance.sina.cn/roll.d.html?rollCid=230808
+        http://stock.finance.sina.com.cn/stock/go.php/vReport_List/kind/lastest/index.phtml
+        http://finance.sina.com.cn/qizhi/
+        """
+        url = "https://finance.sina.com.cn/stock/"
+        return url
+
+    def extract_href(self, url: str):
+        # url_list = []
+        resp = requests.get(url)
+        print(resp.text)
 
 
 def get_url_hash(url: str) -> str:
@@ -330,9 +358,8 @@ def get_url_hash(url: str) -> str:
 
 
 if __name__ == "__main__":
-    url = 'https://money.163.com/20/0725/18/FIDBIU90002580S6.html'
     from dev_global.env import SOFT_PATH
     header = mysqlHeader('stock', 'stock2020', 'natural_language')
-    event = neteaseNewsSpider(header, SOFT_PATH)
-    art = event.extract_article(url)
-    event.record_article(art)
+    event = SinaNewsSpider(header, '')
+    url = event.generate_url_list()
+    event.extract_href(url)
