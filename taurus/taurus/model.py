@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
 import re
-from lxml import etree
-from polaris.mysql8 import mysqlHeader, mysqlBase
-from sqlalchemy import Column, String, Integer, Float, Date, Text
+from sqlalchemy import Column, String, Integer, Date, Text
 from sqlalchemy.ext.declarative import declarative_base
-import lxml
+import lxml.etree
 
 
 __version__ = 2
@@ -40,6 +38,7 @@ class formArticle(article_base):
     author = Column(String(20))
     release_date = Column(Date)
     source = Column(String(20))
+    filehash = Column(String(20))
     content = Column(Text)
 
 
@@ -92,6 +91,9 @@ class ArticleBase(object):
 
 
 class article(object):
+    """
+    Netease article model.
+    """
     def __init__(self):
         self.title = ""
         self.author = ""
@@ -118,7 +120,7 @@ class article(object):
             title = title[0]
         return title
 
-    def _get_source(self, html):
+    def _get_source(self, html: lxml.etree._Element):
         if not isinstance(html, lxml.etree._Element):
             raise TypeError('html type error')
         source = html.xpath("//div[@class='ep-source cDGray']/span[@class='left']/text()")
@@ -138,7 +140,7 @@ class article(object):
         else:
             return None
 
-    def _text_clean(self, text):
+    def _text_clean(self, text: list):
         content = ''
         for line in text:
             result = line.xpath(
@@ -154,5 +156,79 @@ class article(object):
         return content
 
 
+class SinaArticle(object):
+    """
+    Sina article model.
+    """
+    def __init__(self):
+        self.title = ""
+        self.author = ""
+        self.content = ""
+        self.date = None
+        self.source = ""
+        self.url = ""
+
+    def _get_date(self, html):
+        if not isinstance(html, lxml.etree._Element):
+            raise TypeError('html type error')
+        date_string = html.xpath("//div[@class='date-source']/span/text()")
+        for s in date_string:
+            result = re.search(r'(\d{4})\w(\d{2})\w(\d{2})', s)
+            if result:
+                return f"{result.group(1)}-{result.group(2)}-{result.group(3)}"
+        return None
+
+    def _get_title(self, html):
+        if not isinstance(html, lxml.etree._Element):
+            raise TypeError('html type error')
+        title = html.xpath("//h1/text()")
+        if title:
+            title = title[0]
+        return title
+
+    def _get_source(self, html: lxml.etree._Element):
+        if not isinstance(html, lxml.etree._Element):
+            raise TypeError('html type error')
+        source = html.xpath("//div[@class='date-source']/a[@class='source ent-source']/text()")
+        if source:
+            result = source[0]
+            return result
+        else:
+            return None
+
+    def _get_author(self, html):
+        if not isinstance(html, lxml.etree._Element):
+            raise TypeError('html type error')
+        author = html.xpath("//p[@class='article-editor']/text()")
+        if author:
+            result = re.split(r'：', author[0])
+            return result[1]
+        else:
+            return None
+
+    def _text_clean(self, content_text: list):
+        content = ''
+        for line in content_text:
+            content += line
+        # remove space
+        # remove \content \n etc.
+        return content
+
+
 if __name__ == "__main__":
-    pass
+    import requests
+    url = "https://finance.sina.com.cn/stock/roll/2020-08-29/doc-iivhvpwy3687766.shtml"
+    resp = requests.get(url)
+    sina_article = SinaArticle()
+    html = lxml.etree.HTML(resp.text.encode('ISO-8859-1'))
+    title = sina_article._get_title(html)
+    print(title)
+    author = sina_article._get_author(html)
+    print(author)
+    release_date = sina_article._get_date(html)
+    print(release_date)
+    source = sina_article._get_source(html)
+    print(source)
+    content_text = html.xpath("//div[@class='article']/p//text()")
+    content = sina_article._text_clean(content_text)
+    print(content)

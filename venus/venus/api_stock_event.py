@@ -2,7 +2,7 @@
 from venus.company import EventCompany
 from mars.network import delay
 from venus.finance_report import EventFinanceReport
-# import pandas
+import re
 # from venus.cninfo import cninfoSpider
 from mars.utils import ERROR
 from polaris.mysql8 import GLOBAL_HEADER
@@ -10,6 +10,7 @@ from polaris.mysql8 import GLOBAL_HEADER
 
 __version__ = '1.2.15'
 __all__ = [
+    'event_adjust_factor',
     'event_download_balance_data',
     'event_download_cashflow_data',
     'event_download_finance_report',
@@ -130,13 +131,13 @@ def event_adjust_factor():
     stock_list = resolve_stock_list('stock')
     event = EventStockData(GLOBAL_HEADER)
     for stock_code in stock_list:
+        print(stock_code)
         df = event.adjust_factor(stock_code)
         event.record_factor(stock_code, df)
 
 
 # new frame
 def event_flag_stock():
-    import re
     from venus.stock_classify import StockClassify
     event = StockClassify(GLOBAL_HEADER)
     stock_list = event.get_all_security_list()
@@ -250,4 +251,4 @@ def event_download_income_data():
 
 
 if __name__ == "__main__":
-    event_init_index()
+    event_adjust_factor()

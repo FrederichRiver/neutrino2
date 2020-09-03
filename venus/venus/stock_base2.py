@@ -341,17 +341,17 @@ class StockList(spiderBase, StockBase):
 
 
 # On Client
-def resolve_stock_list(stock_type='STOCK'):
+def resolve_stock_list(stock_type='stock'):
     """
     fetch full stock list.
     """
-    if stock_type == 'STOCK':
+    if stock_type == 'stock':
         url = 'http://127.0.0.1:5000/stock'
         pat = re.compile(r"S[H|Z]\d{6}", re.I)
-    elif stock_type == 'HK':
+    elif stock_type == 'hk':
         url = 'http://127.0.0.1:5000/stocklist'
         pat = re.compile(r"HK\d+", re.I)
-    elif stock_type == 'INDEX':
+    elif stock_type == 'index':
         url = 'http://127.0.0.1:5000/index'
         pat = re.compile(r"HK\d+", re.I)
     else:

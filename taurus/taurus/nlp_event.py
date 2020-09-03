@@ -34,5 +34,28 @@ def event_record_announce_url():
         event.run(stock)
 
 
+def event_record_sina_news_url():
+    from taurus.news_downloader import SinaNewsSpider
+    from polaris.mysql8 import NLP_HEADER
+    import time
+    import random
+    # NLP_HEADER = mysqlHeader('stock', 'stock2020', 'natural_language')
+    event = SinaNewsSpider(NLP_HEADER, '')
+    i = 22196
+    event.start_url(i)
+    for url in event.url_list:
+        hrefs = event.extract_href(url)
+        for href in hrefs:
+            # print(href)
+            try:
+                event.record_url(href)
+            except Exception:
+                pass
+        time.sleep(random.randint(5, 10))
+        with open('/home/friederich/Documents/spider/count', 'a') as f:
+            f.write(f"Page: <{str(i)}> contains {len(hrefs)} urls.\n")
+        i += 1
+
+
 if __name__ == "__main__":
-    event_download_netease_news()
+    event_record_sina_news_url()

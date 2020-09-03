@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import mars.utils
+import mars.utils as utils
 import mars.network
-import dev_global
+import dev_global.env
 import mars.database_manager
 import numpy as np
 import pandas as pd

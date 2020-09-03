@@ -1,22 +1,22 @@
 #!/usr/bin/python38
 # -*- coding: utf-8 -*-
 
+import datetime
 import imp
 import json
-from mars.log_manager import log_decorator
 import re
-import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from mars.log_manager import log_decorator
 # modules loaded into module list
-import venus.api_stock_event
-import taurus.nlp_event
-import taurus.announcement
-import saturn.finance_event
-import saturn.balance_analysis
 import mars.database_manager
 import mars.log_manager
 import mars.mail_manager
+import saturn.finance_event
+import saturn.balance_analysis
+import taurus.nlp_event
+import taurus.announcement
+import venus.api_stock_event
 
 __version__ = '1.2.7'
 

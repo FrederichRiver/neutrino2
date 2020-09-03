@@ -1,4 +1,4 @@
-__version__ = (2, 3, 7)
+__version__ = (2, 3, 10)
 __all__ = [
     'model', 'news_downloader', 'news_resource',
     'finance_dict', 'nlp_event',

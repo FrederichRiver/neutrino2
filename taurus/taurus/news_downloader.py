@@ -1,8 +1,9 @@
 #! /usr/bin/env python38
 import re
 import json
+from taurus.model import SinaArticle
 import requests
-import lxml
+import lxml.etree
 import hashlib
 from mars.log_manager import log_decorator, log_decorator2
 from taurus.model import article, ArticleBase
@@ -93,6 +94,17 @@ class formArticle(article_base):
     content = Column(Text)
 
 
+class formNews(article_base):
+    __tablename__ = 'news'
+    idx = Column(Integer, unique=True)
+    title = Column(String(50))
+    url = Column(String(50), primary_key=True)
+    author = Column(String(20))
+    release_date = Column(Date)
+    source = Column(String(20))
+    filename = Column(String(35))
+
+
 class newsSpiderBase(object):
     def __init__(self, header, path):
         self.mysql = mysqlBase(header)
@@ -116,6 +128,11 @@ class newsSpiderBase(object):
         with open(href_file, 'r') as f:
             url = f.readline()
             self.href.append(url)
+
+    @log_decorator2
+    def save_file(self, filename: str, content: str) -> None:
+        with open(filename, 'w') as f:
+            f.write(content)
 
 
 class neteaseNewsSpider(newsSpiderBase):
@@ -317,13 +334,20 @@ class neteaseNewsSpider(newsSpiderBase):
 
 
 class SinaNewsSpider(newsSpiderBase):
+    def start_url(self, count=1):
+        for i in range(count, count+10000):
+            self.url_list.append(f"http://roll.finance.sina.com.cn/finance/zq1/index_{i}.shtml")
+
     def generate_url_list(self):
         """
+        http://roll.finance.sina.com.cn/finance/zq1/index_1.shtml
         https://finance.sina.com.cn/stock/
         http://finance.sina.com.cn/stock/newstock/
         http://finance.sina.com.cn/stock/hkstock/
         https://finance.sina.com.cn/stock/usstock/
         http://finance.sina.com.cn/stock/kechuangban/
+        http://finance.sina.com.cn/stock/quanshang/
+        http://finance.sina.com.cn/stock/estate/
         https://finance.sina.com.cn/fund/
         https://finance.sina.com.cn/futuremarket/
         https://finance.sina.com.cn/forex/
@@ -339,14 +363,73 @@ class SinaNewsSpider(newsSpiderBase):
         https://finance.sina.cn/roll.d.html?rollCid=230808
         http://stock.finance.sina.com.cn/stock/go.php/vReport_List/kind/lastest/index.phtml
         http://finance.sina.com.cn/qizhi/
+        http://finance.sina.com.cn/7x24/
         """
         url = "https://finance.sina.com.cn/stock/"
         return url
 
-    def extract_href(self, url: str):
-        # url_list = []
+    def extract_href(self, url: str) -> list:
         resp = requests.get(url)
-        print(resp.text)
+        if resp.status_code == 200:
+            result = lxml.etree.HTML(resp.text)
+            urls = result.xpath("//li/a/@href")
+        else:
+            urls = []
+        result = []
+        for url in urls:
+            # if re.match(r'(http|https)://finance.sina.com.cn/(stock|roll|wm|dy)/\w+/\d{4}-\d{2}-\d{2}/doc-[0-9a-zA-Z]+.shtml', url):
+            if re.match(r'(http|https)://finance.sina.com.cn/[a-zA-Z0-9_/]+/\d{4}-\d{2}-\d{2}/doc-[0-9a-zA-Z]+.shtml', url):
+                result.append(url)
+            elif re.match(r'(http|https)://finance.sina.com.cn/[a-zA-Z0-9_/]+/\d{8}/[0-9a-zA-Z]+.shtml', url):
+                result.append(url)
+            else:
+                with open('/home/friederich/Documents/spider/failed', 'a') as f:
+                    f.write(f"{url}\n")
+        return result
+
+        """
+        with open('/home/friederich/Documents/spider/urls2', 'w') as f:
+            line = ''
+            for url in result:
+                line = url + '\n'
+                f.writelines(line)
+        return result
+        """
+
+    def record_url(self, url):
+        """
+        Insert url into table natural_language.news
+        """
+        sql = f"INSERT IGNORE into news (url) values ('{url}')"
+        self.mysql.engine.execute(sql)
+
+    def extract_article(self, url: str) -> SinaArticle:
+        """
+        Extract article from finance@sina
+        """
+        resp = requests.get(url)
+        sina_article = SinaArticle()
+        if resp.status_code == 200:
+            html = lxml.etree.HTML(resp.text.encode('ISO-8859-1'))
+            sina_article.url = url
+            sina_article.title = sina_article._get_title(html)
+            sina_article.author = sina_article._get_author(html)
+            sina_article.date = sina_article._get_date(html)
+            sina_article.source = sina_article._get_source(html)
+            content_text = html.xpath("//div[@class='article']/p//text()")
+            content = sina_article._text_clean(content_text)
+            filename = self.path + get_url_hash(url)
+            self.save_file(filename, content)
+        return sina_article
+
+    def record_article(self, art):
+        query = self.mysql.session.query(formNews).filter_by(url=art.url).first()
+        query.title = art.title
+        query.release_date = art.date
+        query.author = art.author
+        query.source = art.source
+        query.filename = get_url_hash(art.url)
+        self.mysql.session.commit()
 
 
 def get_url_hash(url: str) -> str:
@@ -358,8 +441,32 @@ def get_url_hash(url: str) -> str:
 
 
 if __name__ == "__main__":
+    import time
+    """
     from dev_global.env import SOFT_PATH
     header = mysqlHeader('stock', 'stock2020', 'natural_language')
     event = SinaNewsSpider(header, '')
-    url = event.generate_url_list()
-    event.extract_href(url)
+    url = "http://roll.finance.sina.com.cn/finance/zq1/index_205.shtml"
+    # url = event.generate_url_list()
+    url_list = event.extract_href(url)
+    resp = requests.get(url_list[-1])
+    print(resp.encoding)
+    if resp.status_code == 200:
+        h = lxml.etree.HTML(resp.text.encode('ISO-8859-1'))
+        content = h.xpath("//div[@class='article']/p//text()")
+    result = ''
+    for line in content:
+        result += line
+    with open('/home/friederich/Documents/spider/article2', 'w') as f:
+        f.write(result)
+    """
+    # from dev_global.env import SOFT_PATH
+    path = '/home/friederich/Documents/spider/'
+    header = mysqlHeader('stock', 'stock2020', 'natural_language')
+    event = SinaNewsSpider(header, path)
+    event.start_url()
+    for url in event.url_list[:10]:
+        hrefs = event.extract_href(url)
+        time.sleep(10)
+    #article_result = event.extract_article(hrefs[0])
+    #event.record_article(article_result)
