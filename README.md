@@ -38,3 +38,16 @@ Neutrino 工作机制：
 1. 首先通过两次fork产生一个守护进程。  
 2. 守护进程利用多线程框架Thread开启一个监视器进程，该进程检测log文件。一旦发现log文件丢失，monitor进程将重建文件并建立重定向。  
 3. 守护进程再次建立一个任务管理器，任务管理器引用自定义的taskManager(基于Apscheduler)模块，实现任务的管理。  
+
+1、若要导入所有包可以输入：
+
+import torch
+from transformers import *
+2、若要导入指定的包可以输入：
+
+import torch
+from transformers import BertModel
+3、加载预训练权重和词表
+
+UNCASED = './bert-base-uncased'
+bert = BertModel.from_pretrained(UNCASED)

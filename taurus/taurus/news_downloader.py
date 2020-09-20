@@ -1,6 +1,7 @@
 #! /usr/bin/env python38
 import re
 import json
+from sys import path
 from taurus.model import SinaArticle
 import requests
 import lxml.etree
@@ -10,6 +11,7 @@ from taurus.model import article, ArticleBase
 from polaris.mysql8 import mysqlHeader, mysqlBase
 from sqlalchemy import Column, String, Integer, Date, Text
 from sqlalchemy.ext.declarative import declarative_base
+from venus.stock_base2 import StockBase
 
 
 __version__ = '1.2.4'
@@ -440,33 +442,36 @@ def get_url_hash(url: str) -> str:
     return urlhash
 
 
+class newsSpider(StockBase):
+    def __init__(self, header) -> None:
+        super(newsSpider, self).__init__(header)
+        self.filepath = '/home/friederich/Downloads/page/'
+
+    def get_url_list(self) -> list:
+        query = self.condition_select('news', 'url', 'filename is null')
+        url_list = []
+        if not query.empty:
+            url_list = list(query[0])
+        return url_list
+
+    def save_page(self, url) -> None:
+        resp = requests.get(url)
+        filehash = get_url_hash(url)
+        filename = self.filepath + filehash + '.html'
+        if resp.status_code == 200:
+            with open(filename, 'w', encoding=resp.encoding) as f:
+                f.write(resp.text)
+            self.record_page(filehash, url)
+        else:
+            self.record_page('failed', url)
+
+    def record_page(self, filename, url):
+        self.update_value('news', 'filename', f"'{filename}'", f"url='{url}'")
+
+
 if __name__ == "__main__":
-    import time
-    """
-    from dev_global.env import SOFT_PATH
     header = mysqlHeader('stock', 'stock2020', 'natural_language')
-    event = SinaNewsSpider(header, '')
-    url = "http://roll.finance.sina.com.cn/finance/zq1/index_205.shtml"
-    # url = event.generate_url_list()
-    url_list = event.extract_href(url)
-    resp = requests.get(url_list[-1])
-    print(resp.encoding)
-    if resp.status_code == 200:
-        h = lxml.etree.HTML(resp.text.encode('ISO-8859-1'))
-        content = h.xpath("//div[@class='article']/p//text()")
-    result = ''
-    for line in content:
-        result += line
-    with open('/home/friederich/Documents/spider/article2', 'w') as f:
-        f.write(result)
-    """
-    # from dev_global.env import SOFT_PATH
-    path = '/home/friederich/Documents/spider/'
-    header = mysqlHeader('stock', 'stock2020', 'natural_language')
-    event = SinaNewsSpider(header, path)
-    event.start_url()
-    for url in event.url_list[:10]:
-        hrefs = event.extract_href(url)
-        time.sleep(10)
-    #article_result = event.extract_article(hrefs[0])
-    #event.record_article(article_result)
+    event = newsSpider(header)
+    url_list = event.get_url_list()
+    for url in url_list[:5]:
+        event.save_page(url)

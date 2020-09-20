@@ -2,6 +2,7 @@
 from venus.stock_base2 import StockBase
 from flask import Flask
 from flask import jsonify
+from dev_global.basic import deamon
 
 
 # Usage: import app, and app.run()
@@ -41,5 +42,6 @@ def api_get_index():
 
 
 if __name__ == "__main__":
+    deamon('/tmp/api_restful.pid', '/tmp/api_restful.log')
     app.run()
     # resolve_stock_list('HK')

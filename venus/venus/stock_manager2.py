@@ -3,7 +3,8 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 from datetime import timedelta
-import dev_global.var
+# import dev_global.var
+from dev_global.var import stock_interest_column, stock_table_column, stock_table_column2
 from dev_global.env import CONF_FILE, DOWNLOAD_PATH
 # from dev_global.var import stock_table_column
 from mars.utils import read_url, drop_space
@@ -51,7 +52,7 @@ class EventTradeDataManager(StockBase):
         # config file is a url file.
         url = self.url_netease(stock_code, start_date, end_date)
         df = DataFrame()
-        df = pd.read_csv(url, names=dev_global.var.stock_table_column, encoding='gb18030')
+        df = pd.read_csv(url, names=stock_table_column, encoding='gb18030')
         return df
 
     def get_stock_name(self, stock_code):
@@ -98,7 +99,8 @@ class EventTradeDataManager(StockBase):
         """
         Param: df is a DataFrame like data.
         """
-        df.drop(['stock_code'], axis=1, inplace=True)
+        if 'stock_code' in df.columns:
+            df.drop(['stock_code'], axis=1, inplace=True)
         df = df[1:]
         df.replace('None', np.nan, inplace=True)
         df = df.dropna(axis=0, how='any')
@@ -134,18 +136,18 @@ class EventTradeDataManager(StockBase):
             update_date = '19901219'
         # fetch trade data.
         df = self.get_trade_data(stock_code, self.today, start_date=update_date)
-        df = self._clean(df)
-        df = df.sort_values(['trade_date'])
-        tmp = dev_global.var.stock_table_column
-        tmp.remove('stock_code')
-        df_json = self.j2sql.dataframe_to_json(df, keys=tmp)
-        for data in df_json[:5]:
-            sql = self.j2sql.to_sql_insert(data)
-            self.engine.execute(sql)
+        if not df.empty:
+            df = self._clean(df)
+            df = df.sort_values(['trade_date'])
+            df_json = self.j2sql.dataframe_to_json(df, keys=stock_table_column2)
+            for data in df_json:
+                sql = self.j2sql.to_sql_insert(data, table_name=stock_code)
+                self.engine.execute(sql)
 
+    @log_decorator2
     def get_trade_detail_data(self, stock_code, trade_date):
         # trade_date format: '20191118'
-        # DOWNLOAD_PATH = '/home/friederich/Downloads/stock_data/'
+        DOWNLOAD_PATH = '/home/friederich/Downloads/stock_data/'
         code = self.net_ease_code(stock_code)
         url = read_url("URL_tick_data", CONF_FILE).format(
             trade_date[:4], trade_date, code)
@@ -183,4 +185,11 @@ def absolute_path(file_path: str, file_name: str) -> str:
 
 
 if __name__ == "__main__":
-    pass
+    from polaris.mysql8 import GLOBAL_HEADER, mysqlHeader
+    root = mysqlHeader('root', '6414939', 'stock')
+    event = EventTradeDataManager(root)
+    from venus.stock_base2 import resolve_stock_list
+    stock_list = resolve_stock_list('stock')
+    for stock_code in stock_list:
+        print(stock_code)
+        event.download_stock_data(stock_code)

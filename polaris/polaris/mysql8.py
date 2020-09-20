@@ -236,13 +236,16 @@ class Json2Sql(mysqlBase):
             jsonlist.append(tmp)
         return jsonlist
 
-    def to_sql_insert(self, json_data: json):
+    def to_sql_insert(self, json_data: json, table_name=None):
         """
         Generate a sql like 'Replace into <table> (<cols>) values (<vals>)'
         """
         # initial 2 list
         col_section = []
         value_section = []
+        # set table name
+        if not table_name:
+            table_name = self.tablename
         # iter for each key in json.
         for k, v in json_data.items():
             if k in self.table_def.keys():
@@ -252,12 +255,14 @@ class Json2Sql(mysqlBase):
         # combine into sql and returns.
         col = ','.join(col_section)
         val = ','.join(value_section)
-        sql = f"INSERT IGNORE into {self.tablename} ({col}) values ({val})"
+        sql = f"INSERT IGNORE into {table_name} ({col}) values ({val})"
         return(sql)
 
-    def to_sql_update(self, json_data: json, keys: list):
+    def to_sql_update(self, json_data: json, keys: list, table_name=None):
         val = []
         cond = []
+        if not table_name:
+            table_name = self.tablename
         for k, v in json_data.items():
             if k in self.table_def.keys():
                 tmp = f"{k}={self.trans_value(v)}"
@@ -267,7 +272,7 @@ class Json2Sql(mysqlBase):
             tmp = f" ({k}={self.trans_value(json_data[k])}) "
             cond.append(tmp)
         condition = 'AND'.join(cond)
-        sql = f"UPDATE {self.tablename} set {value} WHERE {condition}"
+        sql = f"UPDATE {table_name} set {value} WHERE {condition}"
         return sql
 
     @staticmethod

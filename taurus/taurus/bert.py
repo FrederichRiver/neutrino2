@@ -4,6 +4,7 @@ from transformers import *
 # Transformers has a unified API
 # for 10 transformer architectures and 30 pretrained weights.
 #          Model          | Tokenizer          | Pretrained weights shortcut
+"""
 MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
           (OpenAIGPTModel,  OpenAIGPTTokenizer,  'openai-gpt'),
           (GPT2Model,       GPT2Tokenizer,       'gpt2'),
@@ -15,7 +16,8 @@ MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
           (RobertaModel,    RobertaTokenizer,    'roberta-base'),
           (XLMRobertaModel, XLMRobertaTokenizer, 'xlm-roberta-base'),
          ]
-
+"""
+MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),]
 # To use TensorFlow 2.0 versions of the models, simply prefix the class names with 'TF', e.g. `TFRobertaModel` is the TF 2.0 counterpart of the PyTorch model `RobertaModel`
 
 # Let's encode some text in a sequence of hidden-states using each model:
@@ -54,9 +56,10 @@ for model_class in BERT_MODEL_CLASSES:
     traced_model = torch.jit.trace(model, (input_ids,))
 
     # Simple serialization for models and tokenizers
-    model.save_pretrained('./directory/to/save/')  # save
-    model = model_class.from_pretrained('./directory/to/save/')  # re-load
-    tokenizer.save_pretrained('./directory/to/save/')  # save
-    tokenizer = BertTokenizer.from_pretrained('./directory/to/save/')  # re-load
+    save_path = '/home/friederich/Documents/bert/'
+    model.save_pretrained(save_path)  # save
+    model = model_class.from_pretrained(save_path)  # re-load
+    tokenizer.save_pretrained(save_path)  # save
+    tokenizer = BertTokenizer.from_pretrained(save_path)  # re-load
 
     # SOTA examples for GLUE, SQUAD, text generation...

@@ -75,16 +75,17 @@ def event_record_new_stock():
     from venus.stock_manager2 import EventTradeDataManager
     from venus.stock_base2 import resolve_stock_list
     event = EventTradeDataManager(GLOBAL_HEADER)
-    stock_list = resolve_stock_list('STOCK')
+    stock_list = resolve_stock_list('stock')
     for stock_code in stock_list:
         event.init_stock_data(stock_code)
 
 
 # new frame
 def event_download_stock_data():
-    from venus.stock_manager import EventTradeDataManager
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
     event = EventTradeDataManager(GLOBAL_HEADER)
-    stock_list = event.get_all_stock_list()
+    stock_list = resolve_stock_list('stock')
     for stock_code in stock_list:
         event.download_stock_data(stock_code)
 
@@ -103,7 +104,7 @@ def event_flag_quit_stock():
     from venus.stock_classify import StockClassify
     from venus.stock_base2 import resolve_stock_list
     event = StockClassify(GLOBAL_HEADER)
-    stock_list = resolve_stock_list('STOCK')
+    stock_list = resolve_stock_list('stock')
     for stock_code in stock_list:
         flag = event.flag_quit_stock(stock_code)
         if flag:
@@ -250,5 +251,24 @@ def event_download_income_data():
             ERROR(e)
 
 
+def event_download_detail_data():
+    import datetime
+    from jupiter.network import delay
+    from venus.stock_base2 import resolve_stock_list
+    from venus.stock_manager2 import EventTradeDataManager
+    stock_list = resolve_stock_list('stock')
+    event = EventTradeDataManager(GLOBAL_HEADER)
+    today = datetime.date.today()
+    trade_date_list = [
+        (today - datetime.timedelta(days=i)).strftime('%Y%m%d') for i in range(1, 6)
+    ]
+    stock_list = event.get_all_stock_list()
+    for trade_date in trade_date_list:
+        for stock in stock_list:
+            # print(f"Download detail trade data {stock}: {trade_date}")
+            event.get_trade_detail_data(stock, trade_date)
+            delay(5)
+
+
 if __name__ == "__main__":
-    event_adjust_factor()
+    event_download_detail_data()

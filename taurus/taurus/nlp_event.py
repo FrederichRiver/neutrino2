@@ -57,5 +57,21 @@ def event_record_sina_news_url():
         i += 1
 
 
+def event_download_news(n):
+    from mars.network import delay
+    from polaris.mysql8 import mysqlHeader
+    from taurus.news_downloader import newsSpider
+    header = mysqlHeader('stock', 'stock2020', 'natural_language')
+    event = newsSpider(header)
+    url_list = event.get_url_list()
+    for url in url_list[:n]:
+        try:
+            event.save_page(url)
+            delay(5)
+        except Exception as e:
+            print(url)
+            print(e)
+
+
 if __name__ == "__main__":
-    event_record_sina_news_url()
+    event_download_news(3000)

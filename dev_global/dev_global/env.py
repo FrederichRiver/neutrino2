@@ -23,15 +23,16 @@ else:
 ROOT_PATH = '/root/'
 SOFT_PATH = '/opt/neutrino/'
 
-encode = 'wAKO0tFJ8ZH38RW4WseZnQ=='
+PID_FILE = '/tmp/neutrino.pid'
+RESTFUL_PID_FILE = '/tmp/restful.pid'
 
 LOG_FILE = SOFT_PATH + 'neutrino.log'
-PID_FILE = '/tmp/neutrino.pid'
 TASK_FILE = SOFT_PATH + 'config/task.json'
 CONF_FILE = SOFT_PATH + 'config/conf.json'
 HEAD_FILE = SOFT_PATH + 'config/header.json'
 COOKIE_FILE = SOFT_PATH + 'config/cookie.json'
 SQL_FILE = SOFT_PATH + 'config/sql.json'
+RESTFUL_FILE = SOFT_PATH + 'log/restful.log'
 MANUAL = SOFT_PATH + 'config/Neutrino'
 
 DOWNLOAD_PATH = '/home/fred/stock_data'
