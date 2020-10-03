@@ -41,7 +41,7 @@ def event_record_sina_news_url():
     import random
     # NLP_HEADER = mysqlHeader('stock', 'stock2020', 'natural_language')
     event = SinaNewsSpider(NLP_HEADER, '')
-    i = 22196
+    i = 34970
     event.start_url(i)
     for url in event.url_list:
         hrefs = event.extract_href(url)
@@ -74,4 +74,5 @@ def event_download_news(n):
 
 
 if __name__ == "__main__":
-    event_download_news(3000)
+    # event_download_news(15000)
+    event_record_sina_news_url()

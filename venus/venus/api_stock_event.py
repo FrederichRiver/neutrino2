@@ -251,7 +251,7 @@ def event_download_income_data():
             ERROR(e)
 
 
-def event_download_detail_data():
+def event_download_detail_data(trade_date_list: list = None):
     import datetime
     from jupiter.network import delay
     from venus.stock_base2 import resolve_stock_list
@@ -259,16 +259,18 @@ def event_download_detail_data():
     stock_list = resolve_stock_list('stock')
     event = EventTradeDataManager(GLOBAL_HEADER)
     today = datetime.date.today()
-    trade_date_list = [
-        (today - datetime.timedelta(days=i)).strftime('%Y%m%d') for i in range(1, 6)
-    ]
+    if not trade_date_list:
+        trade_date_list = [
+            (today - datetime.timedelta(days=i)).strftime('%Y%m%d') for i in range(1, 6)
+        ]
     stock_list = event.get_all_stock_list()
     for trade_date in trade_date_list:
         for stock in stock_list:
             # print(f"Download detail trade data {stock}: {trade_date}")
             event.get_trade_detail_data(stock, trade_date)
-            delay(5)
+            delay(3)
 
 
 if __name__ == "__main__":
-    event_download_detail_data()
+    date_list = ['20200922', '20200923', '20200928']
+    event_download_detail_data(date_list)

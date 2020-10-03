@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/usr/bin/python38",
+    "python.pythonPath": "/usr/bin/python3",
     "editor.rulers": [120],
     "python.linting.flake8Args": ["--max-line-length=150"]
 }

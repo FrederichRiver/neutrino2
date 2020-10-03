@@ -29,8 +29,8 @@ class databaseBackup(object):
             self.temp_path = '/home/friederich/Downloads/tmp/'
             self.backup_path = '/home/friederich/Downloads/neutrino/'
         else:
-            self.temp_path = '/root/tmp/'
-            self.backup_path = '/root/backup/'
+            self.temp_path = '/home/fred/tmp/'
+            self.backup_path = '/home/fred/backup/'
         self.user = 'root'
         self.pwd = '6414939'
 

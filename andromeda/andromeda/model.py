@@ -2,8 +2,9 @@
 import json
 import copy
 import torch
-from transformers import BertForTokenClassification, BertConfig
+from transformers import BertForTokenClassification
 from transformers.tokenization_bert import BertTokenizer
+from .model_config import bert_config
 
 
 class Features(object):
@@ -35,29 +36,5 @@ class Features(object):
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
 
 
-BERT_BASE_ZHCN_SIZE = 21128
-bert_config = BertConfig(vocab_size=BERT_BASE_ZHCN_SIZE, num_labels=23)
-label_list = [
-    "X", 'B-CONT', 'B-EDU', 'B-LOC', 'B-NAME', 'B-ORG', 'B-PRO', 'B-RACE', 'B-TITLE',
-    'I-CONT', 'I-EDU', 'I-LOC', 'I-NAME', 'I-ORG', 'I-PRO', 'I-RACE', 'I-TITLE',
-    'O', 'S-NAME', 'S-ORG', 'S-RACE', "[START]", "[END]"]
-
-raw = "在9月12日首届中国金融四十人“曲江论坛”上，全国政协委员肖钢表示，我国成为全球跨境投资的大国，已经成为净资本输出国。这是中国资本寻求全球机会的需要，更是资本吸收国主动谋求发展的需要。对外投资是企业全球配置资源、产业布局、靠近生产，实现持续稳健发展的有效的途径，也是构建国内经济大循环为主体，国内国际双循环相互促进新发展格局的有力保障。对外投资规模不断扩大，取得明显成就的同时，海外投资权益保护的重要性、紧迫性也日益凸显出来。"
-
-tokenizer = BertTokenizer.from_pretrained('bert-base-chinese',config=bert_config)
-# token = {'input_ids':[word vector list], 'token_type_ids': [list], 'attention_mask': [list] }
-token = tokenizer(raw)
-# print(token)
-feature_list = []
-token_list = []
-token_list.append(token['input_ids'])
-for token_ids in token_list:
-    feature_list.append(Features(token_ids, len(token_ids)))
-# print(feature_list)
-model = BertForTokenClassification.from_pretrained('bert-base-chinese')
-
-# input_ids, attention_mask, labels, input_lens
-
-output = model(feature_list[0].input_ids)
-
-print(output)
+tokenizer = BertTokenizer.from_pretrained('bert-base-chinese', config=bert_config)
+bert_model = BertForTokenClassification.from_pretrained('bert-base-chinese', config=bert_config)
