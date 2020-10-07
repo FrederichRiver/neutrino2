@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from typing import List, Optional
 
+
 class CRF(nn.Module):
     """Conditional random field.
     This module implements a conditional random field [LMP01]_. The forward computation

@@ -7,22 +7,22 @@ label_list = [
     'I-CONT', 'I-EDU', 'I-LOC', 'I-NAME', 'I-ORG', 'I-PRO', 'I-RACE', 'I-TITLE',
     'O', 'S-NAME', 'S-ORG', 'S-RACE', "[START]", "[END]"]
 # BERT_BASE_ZHCN_SIZE is the vocab size of bert_chinese_base.
-BERT_ZHN_VOCAB_SIZE = 21128
+BERT_ZH_VOCAB_SIZE = 21128
 # num_labels defines the output dimension of BertModel.
 bert_config = BertConfig(
-        vocab_size=BERT_ZHN_VOCAB_SIZE,
-        num_labels=len(label_list),
-        max_position_embeddings=512
-        )
+    vocab_size=BERT_ZH_VOCAB_SIZE,
+    num_labels=len(label_list),
+    max_position_embeddings=512)
 
-model_config_dict = {
+train_config = {
+    # The name of the task to train selected in the list.
     "task_name": None,
-    # Directory manage 
-    "data_dir": '/home/friederich/bert_model/data/',
     "model_type": None,
-    "model_name_or_path": '/home/friederich/bert_model/output/',
-    "output_dir": '/home/friederich/bert_model/output/',
-    "cache_dir": '/home/friederich/bert_model/cache/',
+    # Directory manage
+    "data_dir": '/home/friederich/Documents/bert_model/data/cner/',
+    "model_name_or_path": '/home/friederich/Documents/bert_model/output/',
+    "output_dir": '/home/friederich/Documents/bert_model/output/',
+    "cache_dir": '/home/friederich/Documents/bert_model/cache/',
     "markup": 'bios',
     "loss_type": 'ce',
     "config_name": "",
@@ -75,7 +75,7 @@ def get_argparse_bak():
     parser.add_argument("--model_type", default=None, type=str, required=True,
                         help="Model type selected in the list: ")
     parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
-                        help="Path to pre-trained model or shortcut name selected in the list: " )
+                        help="Path to pre-trained model or shortcut name selected in the list: ")
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model predictions and checkpoints will be written.", )
 
@@ -142,7 +142,7 @@ def get_argparse_bak():
     parser.add_argument("--save_steps", type=int, default=50, help="Save checkpoint every X updates steps.")
     parser.add_argument("--eval_all_checkpoints", action="store_true",
                         help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number", )
-    parser.add_argument("--predict_checkpoints",type=int, default=0,
+    parser.add_argument("--predict_checkpoints", type=int, default=0,
                         help="predict checkpoints starting with the same prefix as model_name ending and ending with step number")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")
     parser.add_argument("--overwrite_output_dir", action="store_true",

@@ -7,7 +7,7 @@ import random
 import torch
 import torch.cuda
 import torch.backends.cudnn
-import numpy as np
+import numpy.random
 
 
 class DataProcessor(object):
@@ -87,6 +87,85 @@ class DataProcessor(object):
                                     labels[start_index+1:end_index+1] = ['I-'+key]*(len(sub_name)-1)
                 lines.append({"words": words, "labels": labels})
         return lines
+
+
+class CNERProcessor(DataProcessor):
+    """Processor for 'CNER' dataset."""
+
+    def get_train_examples(self, data_dir):
+        """data_dir is the data path w/o '/'."""
+        return self._create_examples(self._read_text(os.path.join(data_dir, "train.char.bmes")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """data_dir is the data path w/o '/'."""
+        return self._create_examples(self._read_text(os.path.join(data_dir, "dev.char.bmes")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """data_dir is the data path w/o '/'."""
+        return self._create_examples(self._read_text(os.path.join(data_dir, "test.char.bmes")), "test")
+
+    def get_labels(self):
+        """See base class."""
+        return ["X", 'B-CONT', 'B-EDU', 'B-LOC', 'B-NAME', 'B-ORG', 'B-PRO', 'B-RACE', 'B-TITLE',
+                'I-CONT', 'I-EDU', 'I-LOC', 'I-NAME', 'I-ORG', 'I-PRO', 'I-RACE', 'I-TITLE',
+                'O', 'S-NAME', 'S-ORG', 'S-RACE', "[START]", "[END]"]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, line) in enumerate(lines):
+            # if i == 0:
+            #    continue
+            guid = "%s-%s" % (set_type, i)
+            text_a = line['words']
+            # BIOS
+            labels = []
+            for x in line['labels']:
+                if 'M-' in x:
+                    labels.append(x.replace('M-', 'I-'))
+                elif 'E-' in x:
+                    labels.append(x.replace('E-', 'I-'))
+                else:
+                    labels.append(x)
+            examples.append(InputExample(guid=guid, text_a=text_a, labels=labels))
+        return examples
+
+
+class CluenerProcessor(DataProcessor):
+    """Processor for the chinese ner data set."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_json(os.path.join(data_dir, "train.json")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_json(os.path.join(data_dir, "dev.json")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_json(os.path.join(data_dir, "test.json")), "test")
+
+    def get_labels(self):
+        """See base class."""
+        return ["X", "B-address", "B-book", "B-company", 'B-game', 'B-government', 'B-movie', 'B-name',
+                'B-organization', 'B-position', 'B-scene', "I-address",
+                "I-book", "I-company", 'I-game', 'I-government', 'I-movie', 'I-name',
+                'I-organization', 'I-position', 'I-scene',
+                "S-address", "S-book", "S-company", 'S-game', 'S-government', 'S-movie',
+                'S-name', 'S-organization', 'S-position',
+                'S-scene', 'O', "[START]", "[END]"]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, line) in enumerate(lines):
+            guid = "%s-%s" % (set_type, i)
+            text_a = line['words']
+            # BIOS
+            labels = line['labels']
+            examples.append(InputExample(guid=guid, text_a=text_a, labels=labels))
+        return examples
 
 
 class InputExample(object):
@@ -251,10 +330,124 @@ def set_seed(seed=1029):
     '''
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
+    numpy.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     # some cudnn methods can be random even after fixing the seed
     # unless you tell it to be deterministic
     torch.backends.cudnn.deterministic = True
+
+
+def get_entity_bios(seq, id2label):
+    """Gets entities from sequence.
+    note: BIOS
+    Args:
+        seq (list): sequence of labels.
+    Returns:
+        list: list of (chunk_type, chunk_start, chunk_end).
+    Example:
+        # >>> seq = ['B-PER', 'I-PER', 'O', 'S-LOC']
+        # >>> get_entity_bios(seq)
+        [['PER', 0, 1], ['LOC', 3, 3]]
+    """
+    chunks = []
+    chunk = [-1, -1, -1]
+    for indx, tag in enumerate(seq):
+        if not isinstance(tag, str):
+            tag = id2label[tag]
+        if tag.startswith("S-"):
+            if chunk[2] != -1:
+                chunks.append(chunk)
+            chunk = [-1, -1, -1]
+            chunk[1] = indx
+            chunk[2] = indx
+            chunk[0] = tag.split('-')[1]
+            chunks.append(chunk)
+            chunk = (-1, -1, -1)
+        if tag.startswith("B-"):
+            if chunk[2] != -1:
+                chunks.append(chunk)
+            chunk = [-1, -1, -1]
+            chunk[1] = indx
+            chunk[0] = tag.split('-')[1]
+        elif tag.startswith('I-') and chunk[1] != -1:
+            _type = tag.split('-')[1]
+            if _type == chunk[0]:
+                chunk[2] = indx
+            if indx == len(seq) - 1:
+                chunks.append(chunk)
+        else:
+            if chunk[2] != -1:
+                chunks.append(chunk)
+            chunk = [-1, -1, -1]
+    return chunks
+
+
+def get_entity_bio(seq, id2label):
+    """Gets entities from sequence.
+    note: BIO
+    Args:
+        seq (list): sequence of labels.
+    Returns:
+        list: list of (chunk_type, chunk_start, chunk_end).
+    Example:
+        seq = ['B-PER', 'I-PER', 'O', 'B-LOC']
+        get_entity_bio(seq)
+        #output
+        [['PER', 0,1], ['LOC', 3, 3]]
+    """
+    chunks = []
+    chunk = [-1, -1, -1]
+    for indx, tag in enumerate(seq):
+        if not isinstance(tag, str):
+            tag = id2label[tag]
+        if tag.startswith("B-"):
+            if chunk[2] != -1:
+                chunks.append(chunk)
+            chunk = [-1, -1, -1]
+            chunk[1] = indx
+            chunk[0] = tag.split('-')[1]
+            chunk[2] = indx
+            if indx == len(seq) - 1:
+                chunks.append(chunk)
+        elif tag.startswith('I-') and chunk[1] != -1:
+            _type = tag.split('-')[1]
+            if _type == chunk[0]:
+                chunk[2] = indx
+
+            if indx == len(seq) - 1:
+                chunks.append(chunk)
+        else:
+            if chunk[2] != -1:
+                chunks.append(chunk)
+            chunk = [-1, -1, -1]
+    return chunks
+
+
+def get_entities(seq, id2label, markup='bios'):
+    '''
+    :param seq:
+    :param id2label:
+    :param markup:
+    :return:
+    '''
+    assert markup in ['bio', 'bios']
+    if markup == 'bio':
+        return get_entity_bio(seq, id2label)
+    else:
+        return get_entity_bios(seq, id2label)
+
+
+def bert_extract_item(start_logits, end_logits):
+    S = []
+    start_pred = torch.argmax(start_logits, -1).cpu().numpy()[0][1:-1]
+    end_pred = torch.argmax(end_logits, -1).cpu().numpy()[0][1:-1]
+    for i, s_l in enumerate(start_pred):
+        if s_l == 0:
+            continue
+        for j, e_l in enumerate(end_pred[i:]):
+            if s_l == e_l:
+                S.append((s_l, i, i + j))
+                break
+    return S

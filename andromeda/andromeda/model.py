@@ -25,7 +25,9 @@ class BertCRFModel(BertForTokenClassification):
         sequence_output = outputs[0]
         sequence_output = self.dropout(sequence_output)
         logits = self.classifier(sequence_output)
+        # output format: (logits,)
         outputs = (logits,)
+        # labels setting
         if labels is not None:
             loss = self.crf(emissions=logits, tags=labels, mask=attention_mask)
             outputs = (-1*loss,)+outputs
