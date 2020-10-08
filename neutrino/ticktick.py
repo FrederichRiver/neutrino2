@@ -63,7 +63,7 @@ def main():
 
 def pack_log():
     source_path = '/opt/neutrino/'
-    target_path = "/var/ftp/pub/"
+    target_path = "/var/ftp/pub/log/"
     zip_list = []
     # get log file(s) in source path -> zip_list
     os.chdir(source_path)

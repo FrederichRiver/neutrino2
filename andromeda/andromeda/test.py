@@ -2,7 +2,7 @@
 import torch
 import torch.nn
 from torch.optim import AdamW
-from torch.utils.data import DataLoader, TensorDataset, SequentialSampler
+from torch.utils.data import DataLoader, TensorDataset, RandomSampler
 from torch.utils.data.dataset import Dataset
 from transformers import get_linear_schedule_with_warmup
 from andromeda.model_config import bert_config, train_config
@@ -165,7 +165,6 @@ def train(args: dict, model, train_dataloader: DataLoader, train_dataset: Datase
         epochs_trained = global_step // (len(train_dataloader) // args['gradient_accumulation_steps'])
         steps_trained_in_current_epoch = global_step % (len(train_dataloader) // args['gradient_accumulation_steps'])
     tr_loss = 0.0
-    model.zero_grad()
     model.train()
     set_seed(args['seed'])  # Added here for reproductibility (even between python 2 and 3)
     for _ in range(int(args['num_train_epochs'])):
@@ -180,6 +179,7 @@ def train(args: dict, model, train_dataloader: DataLoader, train_dataset: Datase
             # print(inputs)
             outputs = model(**inputs)
             loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
+            model.zero_grad()
             if args['n_gpu'] > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training
             if args['gradient_accumulation_steps'] > 1:
@@ -262,11 +262,6 @@ if __name__ == "__main__":
     tokenizer = CNerTokenizer.from_pretrained('bert-base-chinese', config=bert_config, cache_dir=train_config['cache_dir'], bos_token='[BOS]', eos_token='[EOS]')
     bert_model = BertCRFModel.from_pretrained('bert-base-chinese', config=bert_config)
     train_dataset = load_and_cache(train_config, tokenizer)
-    train_sampler = SequentialSampler(train_dataset)
+    train_sampler = RandomSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, sampler=train_sampler, collate_fn=collate_fn, batch_size=10)
     global_step, tr_loss = train(train_config, bert_model, train_dataloader, train_dataset, tokenizer)
-    # print(" global_step = %s, average loss = %s", global_step, tr_loss)
-    """
-        global_step, tr_loss = train(args, train_dataset, model, tokenizer)
-        logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
-    """

@@ -10,7 +10,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from mars.task_manager import taskManager2
 from threading import Thread
-from mars.log_manager import infoLog, errorLog, log_decorator2
+from mars.log_manager import infoLog, errorLog
 
 
 __version__ = '1.7.15'
@@ -75,6 +75,11 @@ def logfile_monitor(log_file):
             with open(log_file, 'a') as error_null:
                 os.dup2(error_null.fileno(), 2)
             infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
+
+
+def frame_work(pid_file, log_file, time):
+    # deamon process
+    pass
 
 
 def neptune_pipeline(taskfile=None):
