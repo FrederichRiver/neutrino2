@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+import atexit
+import os
+import signal
+import sys
 import json
 import logging
 import pandas as pd
@@ -6,7 +10,94 @@ import datetime
 import re
 import functools
 import psutil
-from dev_global.env import CONF_FILE, LOG_FILE, SQL_FILE, TIME_FMT
+from dev_global.env import LOG_FILE, TIME_FMT
+from .task_server import SocketClient
+import time
+
+
+def frame_work(func, prog_name):
+    deamon(prog_name)
+    event = SocketClient()
+    event.connect()
+    event.send(f"Q|{func.__name__}")
+    dt = event.recieve()
+    event.close()
+    del event
+    time.sleep(int(dt))
+    while True:
+        func()
+        event = SocketClient()
+        event.connect()
+        event.send(f'E|{func.__name__}')
+        dt = event.recieve()
+        event.close()
+        del event
+        time.sleep(int(dt))
+    return 1
+
+
+def interval_work(func, prog_name):
+    deamon(prog_name)
+    event = SocketClient()
+    event.connect()
+    event.send(f"Q|{func.__name__}")
+    dt = event.recieve()
+    event.close()
+    del event
+    time.sleep(1800)
+    while True:
+        func()
+        event = SocketClient()
+        event.connect()
+        event.send(f'Q|{func.__name__}')
+        dt = event.recieve()
+        event.close()
+        del event
+        time.sleep(1800)
+    return 1
+
+
+def deamon(prog_name):
+    # This is a daemon programe, which will start after
+    # system booted.
+    #
+    # It is defined to start by rc.local.
+    #
+    # fork a sub process from father
+    pid_file = f"/tmp/{prog_name}.pid"
+    log_file = f"/opt/neutrino/{prog_name}.log"
+    if os.path.exists(pid_file):
+        raise RuntimeError(f"{prog_name} is already running")
+    # the first fork.
+    if os.fork() > 0:
+        raise SystemExit(0)
+
+    os.chdir('/')
+    os.umask(0)
+    os.setsid()
+    # Second fork
+    if os.fork() > 0:
+        raise SystemExit(0)
+    # Flush I/O buffers
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    # with open(log_file, 'rb', 0) as read_null:
+    # os.dup2(read_null.fileno(), sys.stdin.fileno())
+    with open(log_file, 'a') as write_null:
+        # Redirect to 1 which means stdout
+        os.dup2(write_null.fileno(), 1)
+    with open(log_file, 'a') as error_null:
+        # Redirect to 2 which means stderr
+        os.dup2(error_null.fileno(), 2)
+    if pid_file:
+        with open(pid_file, 'w+') as f:
+            f.write(str(os.getpid()))
+        atexit.register(os.remove, pid_file)
+
+    def sigterm_handler(signo, frame):
+        raise SystemExit(1)
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 def read_json(key, js_file):

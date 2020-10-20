@@ -11,7 +11,7 @@ def neutrino_install():
     dest = '/opt/neutrino/'
     obj = '/root/ftp/package/'
     files = [
-        'neutrino.py', 'message.py', 'manage_tool.py',
+        'neutrino.py', 'manage_tool.py',
         'config/conf.json', 'config/Neutrino', 'config/task.json',
         'config/cookie.json']
     for fi in files:

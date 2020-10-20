@@ -8,7 +8,7 @@ setup(
         name='polaris',
         version=f"{v[0]}.{v[1]}.{v[2]}",
         packages=find_packages(),
-        install_requires=['sqlalchemy>=1.3.16', ],
+        install_requires=['sqlalchemy>=1.3.16', 'py2neo'],
         author='Fred Monster',
         author_email='hezhiyuan_tju@163.com',
         url=GITHUB_URL,

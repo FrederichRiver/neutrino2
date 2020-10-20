@@ -271,6 +271,25 @@ def event_download_detail_data(trade_date_list: list = None):
             delay(3)
 
 
+def event_set_update_date():
+    from venus.stock_manager2 import EventTradeDataManager
+    from venus.stock_base2 import resolve_stock_list
+    from datetime import datetime
+    event = EventTradeDataManager(GLOBAL_HEADER)
+    stock_list = resolve_stock_list('stock')
+    for stock_code in stock_list:
+        df = event.select_values(stock_code, 'trade_date')
+        try:
+            update_date = df[0][-1:].values
+            update = update_date[0]
+            t = update.strftime('%Y-%m-%d')
+            # print(t)
+            event.update_value('stock_manager', 'update_date', f"'{t}'", f"stock_code='{stock_code}'")
+        except Exception as e:
+            print(e)
+
+
 if __name__ == "__main__":
-    date_list = ['20200922', '20200923', '20200928']
-    event_download_detail_data(date_list)
+    # date_list = ['20200922', '20200923', '20200928']
+    # event_download_detail_data(date_list)
+    event_set_update_date()

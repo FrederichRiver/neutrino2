@@ -6,9 +6,10 @@ import time
 # import re
 import datetime
 from mars.log_manager import info_log, log_decorator2
-from polaris.mysql8 import GLOBAL_HEADER, create_table, mysqlBase, mysqlHeader, TEST_HEADER
+from polaris.mysql8 import GLOBAL_HEADER, create_table, mysqlBase, mysqlHeader
 from venus.stock_base import StockEventBase
 from venus.form import formTemplate, formFinanceTemplate, formInfomation
+from mars.utils import read_json
 
 
 __version__ = '1.1.6'
@@ -20,17 +21,12 @@ __all__ = ['event_mysql_backup', 'event_initial_database']
 
 class databaseBackup(object):
     def __init__(self):
-        # Will set environment on cloud.
-        flag = os.environ.get('LOGNAME')
         # database will be backuped.
         self.database_list = []
         # Setting path.
-        if flag == 'friederich':
-            self.temp_path = '/home/friederich/Downloads/tmp/'
-            self.backup_path = '/home/friederich/Downloads/neutrino/'
-        else:
-            self.temp_path = '/home/fred/tmp/'
-            self.backup_path = '/home/fred/backup/'
+        _, data_path = read_json('data_path', '/opt/neutrino/config/conf.json')
+        self.temp_path = f"{data_path}/tmp/"
+        self.backup_path = f"{data_path}/neutrino/"
         self.user = 'root'
         self.pwd = '6414939'
 

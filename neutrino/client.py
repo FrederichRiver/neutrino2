@@ -1,4 +1,5 @@
 import socket
+import time
 
 
 class SocketClient(object):
@@ -25,8 +26,28 @@ class SocketClient(object):
         self.socket.close()
 
 
-event = SocketClient()
-event.connect()
-event.send('E|test')
-event.recieve()
-event.close()
+def test():
+    print('func test')
+
+
+def frame(func):
+    event = SocketClient()
+    event.connect()
+    event.send('Q|test')
+    dt = event.recieve()
+    event.close()
+    del event
+    time.sleep(int(5))
+    while True:
+        func()
+        event = SocketClient()
+        event.connect()
+        event.send(f'E|{func.__name__}')
+        dt = event.recieve()
+        print(dt)
+        event.close()
+        del event
+        time.sleep(int(30))
+
+
+frame(test)

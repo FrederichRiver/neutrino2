@@ -9,5 +9,6 @@
 	"URL_balance":"http://quotes.money.163.com/service/zcfzb_{}.html",
 	"URL_cashflow":"http://quotes.money.163.com/service/xjllb_{}.html",
 	"URL_income":"http://quotes.money.163.com/service/lrb_{}.html",
-	"path_template":"/opt/neutrino/template/"
+	"path_template":"/opt/neutrino/template/",
+	"fred_path":"/home/friederich/Downloads"
 }

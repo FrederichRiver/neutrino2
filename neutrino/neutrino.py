@@ -77,9 +77,25 @@ def logfile_monitor(log_file):
             infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
 
 
-def frame_work(pid_file, log_file, time):
+def frame_work(pid_file, log_file, func):
     # deamon process
-    pass
+    event = SocketClient()
+    event.connect()
+    event.send('Q|test')
+    dt = event.recieve()
+    event.close()
+    del event
+    time.sleep(int(5))
+    while True:
+        func()
+        event = SocketClient()
+        event.connect()
+        event.send(f'E|{func.__name__}')
+        dt = event.recieve()
+        print(dt)
+        event.close()
+        del event
+        time.sleep(int(30))
 
 
 def neptune_pipeline(taskfile=None):

@@ -1,7 +1,6 @@
 #! /usr/bin/env python38
 import re
 import json
-from sys import path
 from taurus.model import SinaArticle
 import requests
 import lxml.etree
@@ -473,5 +472,5 @@ if __name__ == "__main__":
     header = mysqlHeader('stock', 'stock2020', 'natural_language')
     event = newsSpider(header)
     url_list = event.get_url_list()
-    for url in url_list[:5]:
+    for url in url_list:
         event.save_page(url)

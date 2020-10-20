@@ -1,5 +1,5 @@
 import socket
-from polaris.mysql8 import mysqlBase, mysqlHeader, GLOBAL_HEADER
+from polaris.mysql8 import mysqlBase, mysqlHeader
 import datetime
 
 
@@ -21,7 +21,7 @@ class SocketServer(object):
         if port in forbid_port:
             port = 12001
         self.socket.bind((name, port))
-        self.task_list = ['test']
+        self.task_list = ['test', 'event_mysql_backup', 'system_update']
         self.mysql = mysqlBase(header)
 
     def run(self):
@@ -33,8 +33,14 @@ class SocketServer(object):
             flag, content = self.msg_resolve(data.decode())
             delta = 0
             if self._in_task_list(content):
-                delta = self.next_run_time(content)
-                self._update_time(content, 'time')
+                if flag == 'E':
+                    delta = self.next_run_time(content)
+                    self._update_time(content, 'time')
+                elif flag == 'Q':
+                    delta = self.next_run_time(content)
+                elif flag == 'U':
+                    self.load_task()
+            # print(delta)
             conn.send(str.encode(f"{str(delta)}"))
             conn.close()
             # Each time a task is updated, the task list will be reloaded.
@@ -62,7 +68,7 @@ class SocketServer(object):
             nrt = int((next_run_time - datetime.datetime.now()).total_seconds())
         else:
             nrt = 0
-        return nrt
+        return max(nrt, 0)
 
     def set_task_finish(self, task_name: str) -> int:
         return 0
@@ -98,11 +104,37 @@ class SocketServer(object):
     def load_task(self):
         df = self.mysql.select_values('task_scheduler', 'task_name')
         self.task_list = list(df[0])
-        print(self.task_list)
 
 
+class SocketClient(object):
+    def __init__(self, name='127.0.0.1', port=0) -> None:
+        self.socket = socket.socket()
+        if name is None:
+            name = socket.gethostname()
+        self.name = name
+        forbid_port = [0, 21, 22, 23, 80, 8080]
+        if port in forbid_port:
+            self.port = 12001
+
+    def connect(self):
+        self.socket.connect((self.name, self.port))
+
+    def send(self, msg: str):
+        self.socket.send(str.encode(msg))
+
+    def recieve(self) -> str:
+        data = self.socket.recv(1024)
+        return data.decode()
+
+    def close(self):
+        self.socket.close()
+
+
+"""
+from polaris.mysql8 import GLOBAL_HEADER
 event = SocketServer(GLOBAL_HEADER)
-# event.run()
+event.run()
 # event._update_time('test', 'time')
 # event._task_delay()
-event.load_task()
+# event.load_task()
+"""

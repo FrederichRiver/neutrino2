@@ -2,7 +2,8 @@
 import numpy as np
 import pandas as pd
 from venus.stock_base import StockEventBase, dataLine
-from mars.utils import read_url, CONF_FILE, trans
+from mars.utils import read_url
+from dev_global.env import CONF_FILE
 
 
 class EventFinanceReport(StockEventBase):
