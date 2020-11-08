@@ -5,7 +5,7 @@ import sys
 import time
 # import re
 import datetime
-from mars.log_manager import info_log, log_decorator2
+from mars.log_manager import info_log, log_wo_return
 from polaris.mysql8 import GLOBAL_HEADER, create_table, mysqlBase, mysqlHeader
 from venus.stock_base import StockEventBase
 from venus.form import formTemplate, formFinanceTemplate, formInfomation
@@ -80,7 +80,7 @@ class databaseBackup(object):
         return file_name, file_time
 
 
-@log_decorator2
+@log_wo_return
 def event_initial_database():
     mysql = mysqlBase(GLOBAL_HEADER)
     create_table(formTemplate, mysql.engine)
@@ -88,7 +88,7 @@ def event_initial_database():
     create_table(formInfomation, mysql.engine)
 
 
-@log_decorator2
+@log_wo_return
 def event_mysql_backup():
     event = databaseBackup()
     event.get_database_list()

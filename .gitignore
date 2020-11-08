@@ -8,6 +8,8 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+apache2_docker/apache
+apache2_docker/neutrino
 build/
 develop-eggs/
 dist/

@@ -7,7 +7,7 @@ import json
 import re
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from mars.log_manager import log_decorator
+from mars.log_manager import log_with_return
 # modules loaded into module list
 import mars.database_manager
 import mars.log_manager
@@ -25,9 +25,9 @@ def decoration_print(func):
     """
     decorater of print function.
     """
-    def wrap_func():
+    def wrap_func(*args, **kv):
         print('+-' * 15)
-        func()
+        func(*args, **kv)
         print('+-' * 15)
     return wrap_func
 
@@ -126,7 +126,7 @@ class taskSolver(object):
         else:
             raise FileNotFoundError(taskfile)
 
-    @log_decorator
+    @log_with_return
     def load_event(self):
         """
         This function will reload modules automatically.
@@ -166,24 +166,32 @@ class taskSolver(object):
                     trigger = CronTrigger(
                         hour=int(m.group(1)),
                         minute=int(m.group(2)))
+                else:
+                    trigger = None
             elif k == 'work day':
                 if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['work day']):
                     trigger = CronTrigger(
                         day_of_week='mon,tue,wed,thu,fri',
                         hour=int(m.group(1)),
                         minute=int(m.group(2)))
+                else:
+                    trigger = None
             elif k == 'sat':
                 if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sat']):
                     trigger = CronTrigger(
                         day_of_week='sat',
                         hour=int(m.group(1)),
                         minute=int(m.group(2)))
+                else:
+                    trigger = None
             elif k == 'sun':
                 if m := re.match(r'(\d{1,2}):(\d{2})', jsdata['sun']):
                     trigger = CronTrigger(
                         day_of_week='sun',
                         hour=int(m.group(1)),
                         minute=int(m.group(2)))
+                else:
+                    trigger = None
             else:
                 trigger = None
         return trigger

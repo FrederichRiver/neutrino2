@@ -1,0 +1,1 @@
+mysql -u root -p stock > /home/fred/ftp/stock-2020-10-30.db

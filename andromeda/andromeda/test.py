@@ -1,4 +1,4 @@
-#!/usr/bin/python38
+#!/usr/local/bin/python3/bin/python3.8
 import torch
 import torch.nn
 from torch.optim import AdamW

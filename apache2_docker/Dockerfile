@@ -7,5 +7,8 @@ RUN apt-get update && apt-get -y upgrade\
     && ln -s /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-enabled/000-default.conf
 COPY ./sources.list /etc/apt/sources.list
 COPY apache/ /etc/apache2/
+RUN cd /var/www
+RUN django-admin.py startproject neutrino
+COPY 
 EXPOSE 80
 CMD /etc/init.d/apache2 start

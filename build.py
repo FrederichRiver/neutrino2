@@ -1,4 +1,4 @@
-#!/usr/bin/python38
+#!/usr/bin/python3.8
 import os
 
 PROJ_PATH = '/home/friederich/Dev/neutrino2'

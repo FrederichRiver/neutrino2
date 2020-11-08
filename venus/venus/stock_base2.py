@@ -6,8 +6,7 @@ import re
 import json
 import numpy as np
 import requests
-# import lxml
-from lxml import etree
+import lxml.etree
 from dev_global.env import TIME_FMT
 from polaris.mysql8 import (mysqlBase, mysqlHeader, Json2Sql)
 from requests.models import HTTPError
@@ -89,7 +88,7 @@ class StockBase(mysqlBase):
         if response.status_code == 200:
             # setting encoding
             response.encoding = response.apparent_encoding
-            html = etree.HTML(response.text)
+            html = lxml.etree.HTML(response.text)
         else:
             html = None
             raise HTTPError(f"Status code: {response.status_code} for {url}")
@@ -137,6 +136,12 @@ class StockBase(mysqlBase):
         _, url = read_json(key, url_file)
         return url
 
+    def get_close_price(self, stock_code: str) -> DataFrame:
+        df = self.select_values(stock_code, 'trade_date,close_price')
+        if not df.empty:
+            df.columns = ['trade_date, close_price']
+            df.set_index('trade_date', inplace=True)
+        return df
 
 class HeaderException(BaseException):
     pass

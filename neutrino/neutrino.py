@@ -1,5 +1,4 @@
 #!/usr/bin/python38
-import atexit
 import os
 import signal
 import sys
@@ -10,54 +9,14 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from mars.task_manager import taskManager2
 from threading import Thread
-from mars.log_manager import infoLog, errorLog
+from mars.log_manager import info_log, error_log
+from dev_global.basic import deamon
 
 
 __version__ = '1.7.15'
 
 
 PROG_NAME = 'Neutrino'
-
-
-def deamon(pid_file, log_file):
-    # This is a daemon programe, which will start after
-    # system booted.
-    #
-    # It is defined to start by rc.local.
-    #
-    # fork a sub process from father
-    if os.path.exists(pid_file):
-        raise RuntimeError(f"{PROG_NAME} is already running")
-    # the first fork.
-    if os.fork() > 0:
-        raise SystemExit(0)
-
-    os.chdir('/')
-    os.umask(0)
-    os.setsid()
-    # Second fork
-    if os.fork() > 0:
-        raise SystemExit(0)
-    # Flush I/O buffers
-    sys.stdout.flush()
-    sys.stderr.flush()
-
-    # with open(log_file, 'rb', 0) as read_null:
-    # os.dup2(read_null.fileno(), sys.stdin.fileno())
-    with open(log_file, 'a') as write_null:
-        # Redirect to 1 which means stdout
-        os.dup2(write_null.fileno(), 1)
-    with open(log_file, 'a') as error_null:
-        # Redirect to 2 which means stderr
-        os.dup2(error_null.fileno(), 2)
-    if pid_file:
-        with open(pid_file, 'w+') as f:
-            f.write(str(os.getpid()))
-        atexit.register(os.remove, pid_file)
-
-    def sigterm_handler(signo, frame):
-        raise SystemExit(1)
-    signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 def logfile_monitor(log_file):
@@ -74,66 +33,39 @@ def logfile_monitor(log_file):
                 os.dup2(write_null.fileno(), 1)
             with open(log_file, 'a') as error_null:
                 os.dup2(error_null.fileno(), 2)
-            infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
+            info_log(f"{PROG_NAME} started with pid {os.getpid()}.")
 
 
-def frame_work(pid_file, log_file, func):
-    # deamon process
-    event = SocketClient()
-    event.connect()
-    event.send('Q|test')
-    dt = event.recieve()
-    event.close()
-    del event
-    time.sleep(int(5))
-    while True:
-        func()
-        event = SocketClient()
-        event.connect()
-        event.send(f'E|{func.__name__}')
-        dt = event.recieve()
-        print(dt)
-        event.close()
-        del event
-        time.sleep(int(30))
-
-
-def neptune_pipeline(taskfile=None):
+def task_pipeline(taskfile=None, task_pipeline_name='Default'):
     # init task manager and main
     if not taskfile:
         raise FileNotFoundError(taskfile)
     mysql = mysqlBase(GLOBAL_HEADER)
     jobstores = {
-        'default': SQLAlchemyJobStore(tablename='apscheduler_jobs', engine=mysql.engine)
+        'default': SQLAlchemyJobStore(tablename=f"{task_pipeline_name}_task_sched", engine=mysql.engine)
             }
-    Neptune = taskManager2(
+    task_manager = taskManager2(
         taskfile=taskfile,
-        task_manager='Neptune',
+        task_manager=task_pipeline_name,
         jobstores=jobstores,
         executors={'default': ThreadPoolExecutor(20)},
         job_defaults={'max_instance': 5})
-    Neptune.start()
-    infoLog(f"{PROG_NAME} started with pid {os.getpid()}.")
+    task_manager.start()
+    info_log(f"{PROG_NAME} started with pid {os.getpid()}.")
     while True:
-        Neptune.task_solver.load_event()
-        task_list = Neptune.check_task_list()
-        Neptune.task_manage(task_list)
+        task_manager.task_report()
+        task_manager.task_solver.load_event()
+        task_list = task_manager.check_task_list()
+        task_manager.task_manage(task_list)
         time.sleep(300)
 
 
-def print_info(info_file):
-    infotext = ''
-    with open(info_file) as r:
-        infotext = r.read()
-    print(infotext)
-
-
 # @system_loop
-def main():
-    deamon(PID_FILE, LOG_FILE)
-    lm = Thread(target=logfile_monitor, args=(LOG_FILE,), name='lm', daemon=True)
-    lm.start()
-    neptune_pipeline(TASK_FILE)
+def main(pid_file: str, log_file: str, task_file: str, prog_name: str):
+    deamon(pid_file, log_file, prog_name)
+    LM = Thread(target=logfile_monitor, args=(log_file,), name='neu_lm', daemon=True)
+    LM.start()
+    task_pipeline(task_file, prog_name)
 
 
 if __name__ == '__main__':
@@ -144,25 +76,27 @@ if __name__ == '__main__':
         print(f"{PROG_NAME} start|stop|help")
         raise SystemExit(1)
     if sys.argv[1] == 'start':
-        main()
+        main(PID_FILE, LOG_FILE, TASK_FILE, 'neutrino')
     elif sys.argv[1] == 'stop':
         if os.path.exists(PID_FILE):
             sys.stdout.flush()
             with open(LOG_FILE, 'a') as write_null:
                 os.dup2(write_null.fileno(), 1)
-                infoLog(f"{PROG_NAME} is stopped.")
+                info_log(f"{PROG_NAME} is stopped.")
             with open(PID_FILE) as f:
                 os.kill(int(f.read()), signal.SIGTERM)
         else:
-            errorLog(f"{PROG_NAME} is not running.")
+            error_log(f"{PROG_NAME} is not running.")
             raise SystemExit(1)
     elif sys.argv[1] == 'clear':
         with open(LOG_FILE, 'w') as f:
             pass
     elif sys.argv[1] == 'help':
-        print_info(MANUAL)
+        os.system(f"cat {MANUAL}")
+        # print_info(MANUAL)
     elif sys.argv[1] == 'log':
-        print_info(LOG_FILE)
+        os.system(f"cat {LOG_FILE}")
+        # print_info(LOG_FILE)
     elif sys.argv[1] == 'version':
         print(__version__)
     else:

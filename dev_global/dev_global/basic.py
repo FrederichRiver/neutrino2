@@ -11,7 +11,11 @@ __version__ = '1.0.1'
 PROG_NAME = 'Neutrino'
 
 
-def deamon(pid_file, log_file):
+def deamon(pid_file: str, log_file: str, prog_name: str):
+    """
+    pid_file: full path of pid file, it is suggested in /tmp
+    log_file: full path of log file.
+    """
     # This is a daemon programe, which will start after
     # system booted.
     #
@@ -19,7 +23,7 @@ def deamon(pid_file, log_file):
     #
     # fork a sub process from father
     if os.path.exists(pid_file):
-        raise RuntimeError(f"{PROG_NAME} is already running")
+        raise RuntimeError(f"{prog_name} is already running")
     # the first fork.
     if os.fork() > 0:
         raise SystemExit(0)
@@ -42,11 +46,13 @@ def deamon(pid_file, log_file):
     with open(log_file, 'a') as error_null:
         # Redirect to 2 which means stderr
         os.dup2(error_null.fileno(), 2)
+    # write parent process pid into pid file.
     if pid_file:
         with open(pid_file, 'w+') as f:
             f.write(str(os.getpid()))
         atexit.register(os.remove, pid_file)
 
+    
     def sigterm_handler(signo, frame):
         raise SystemExit(1)
     signal.signal(signal.SIGTERM, sigterm_handler)

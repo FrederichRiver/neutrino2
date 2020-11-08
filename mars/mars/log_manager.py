@@ -4,11 +4,13 @@ import re
 import logging
 import logging.config
 from logging.handlers import TimedRotatingFileHandler
-from dev_global.env import LOG_FILE
+from dev_global.env import LOG_FILE, LOG_TIME_FMT
 from functools import wraps
 
 
 __all__ = ['event_pack_tick_data', ]
+
+# LOG_TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 # logging.basicConfig(filename=LOG_FILE)
@@ -23,48 +25,39 @@ Time_Handler.setLevel(logging.INFO)
 # step 5: create log format
 LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
 # step 6: add log format to handler
-neu_format = logging.Formatter(LOG_FORMAT)
+neu_format = logging.Formatter(LOG_FORMAT, LOG_TIME_FMT)
 Time_Handler.setFormatter(neu_format)
 # step 7: add handler to logger
 
 
-def infoLog(msg: str):
+def info_log(msg: str):
     neulog.addHandler(Time_Handler)
     neulog.info(msg)
-    neulog.handlers.pop()
+    neulog.removeHandler(Time_Handler)
 
 
-def errorLog(msg: str):
+def error_log(msg: str):
     neulog.addHandler(Time_Handler)
     neulog.error(msg)
-    neulog.handlers.pop()
+    neulog.removeHandler(Time_Handler)
 
 
-"""
-neu_format = logging.basicConfig(
-                level=logging.INFO, format=LOG_FORMAT,
-                datefmt="%Y-%m-%d %H:%M:%S", filename=LOG_FILE)
-"""
-
-
-def log_decorator(func):
+def log_with_return(func):
     """
-    decorate function with return value.
+    decorate function with return value.o
     """
     @wraps(func)
     def wrapper(*args, **kv):
         try:
             result = func(*args, **kv)
         except Exception as e:
-            neulog.addHandler(Time_Handler)
             neulog.error(f"<Module> {func.__name__} <Message> {e}")
-            neulog.handlers.pop()
             result = None
         return result
     return wrapper
 
 
-def log_decorator2(func):
+def log_wo_return(func):
     """
     decorate function without return value.
     """
@@ -73,43 +66,9 @@ def log_decorator2(func):
         try:
             func(*args, **kv)
         except Exception as e:
-            neulog.addHandler(Time_Handler)
             neulog.error(f"<Module> {func.__name__} <Message> {e}")
-            neulog.handlers.pop()
-        return func
+        # return func
     return wrapper
-
-
-def system_loop(func):
-    @wraps(func)
-    def wrapper(*args, **kv):
-        try:
-            func(*args, **kv)
-        except Exception as e:
-            neulog.error(e)
-            raise SystemExit(1)
-        return func
-    return wrapper
-
-
-def info_log(text):
-    logging.basicConfig(filename=LOG_FILE,
-                        level=logging.INFO,
-                        filemode='a',
-                        format="%(asctime)s [%(levelname)s]: %(message)s",
-                        datefmt="%Y-%m-%d %H:%M:%S")
-    logger = logging.getLogger()
-    logger.info(text)
-
-
-def error_log(text):
-    logging.basicConfig(filename=LOG_FILE,
-                        level=logging.ERROR,
-                        filemode='a',
-                        format="%(asctime)s [%(levelname)s]: %(message)s",
-                        datefmt="%Y-%m-%d %H:%M:%S")
-    logger = logging.getLogger()
-    logger.error(text)
 
 
 class filePack(object):
@@ -160,4 +119,4 @@ def event_pack_tick_data():
 
 
 if __name__ == "__main__":
-    infoLog('test')
+    pass
