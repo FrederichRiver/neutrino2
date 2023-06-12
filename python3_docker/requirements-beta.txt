@@ -10,7 +10,7 @@ requests
 setuptools
 torch==1.6.0+cpu
 torchvision==0.7.0+cpu
-transformers==3.0.2
+transformers==4.30.0
 urllib3
 wheel
 xlrd
